@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-key="siteTitle">СТИХИЯ — детский сад</title>
+  <meta name="color-scheme" content="light only" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="mobile.css" />
+  <!-- favicon / theme -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <meta name="msapplication-TileColor" content="#917767">
+  <meta name="theme-color" content="#917767">
+</head>
+<body>
+  <!-- ВЕРХНЯЯ ПОЛОСА С НАВИГАЦИЕЙ -->
+  <div class="top-band">
+    <div class="container">
+      <div class="nav" role="navigation" aria-label="Главная навигация">
+        <a class="brand" href="#" aria-label="СТИХИЯ — на главную">
+          <img class="icon" src="media/logo-no.png" alt="Знак" />
+          <img class="wordmark" src="media/lo.png" alt="СТИХИЯ" />
+        </a>
+        <div class="spacer" aria-hidden="true"></div>
+
+        <!-- WhatsApp icon -->
+        <a href="https://wa.me/79161964999" target="_blank" rel="noopener" class="whatsapp-link" aria-label="WhatsApp">
+          <img src="./media/whatsapp.svg" alt="WhatsApp" class="icon">
+        </a>
+        
+        
+
+
+        <nav class="nav-links" aria-label="Разделы">
+          <a href="#about" data-key="navAbout">О нас</a>
+          <a href="#team" data-key="navTeam">Команда</a>
+          <a href="#prices" data-key="navPrices">Цены</a>
+          <a href="#extras" data-key="navExtras">Допы</a>
+          <a href="#contact-info" data-key="navContacts">Контакты</a>
+        </nav>
+        <button class="burger" aria-label="Открыть меню" aria-controls="mobile-menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-band" aria-hidden="true"></div>
+
+  <!-- Мобильное меню -->
+  <nav id="mobile-menu" class="mobile-menu" hidden>
+    <div class="menu-inner container">
+      <!-- УБРАТЬ WhatsApp здесь -->
+      <a href="#about" data-key="navAbout">О нас</a>
+      <a href="#team" data-key="navTeam">Команда</a>
+      <a href="#prices" data-key="navPrices">Цены</a>
+      <a href="#extras" data-key="navExtras">Допы</a>
+      <a href="#contact-info" data-key="navContacts">Контакты</a>
+    </div>
+  </nav>
+  
+  <!-- HERO -->
+  <header class="hero" role="banner">
+    <video autoplay muted loop playsinline preload="metadata" poster="media/back-fallback.jpg">
+      <source src="media/back.mp4" type="video/mp4" />
+      Ваш браузер не поддерживает видео.
+    </video>
+    <div class="hero-inner container">
+      <img class="big-logo" src="media/logo.png" alt="" data-key="heroAlt" />
+    </div>
+
+    <div class="waves" aria-hidden="true">
+      <svg viewBox="0 0 1440 200" preserveAspectRatio="none">
+        <path d="M0,90 C240,60 420,110 720,78 C980,58 1200,102 1440,70 L1440,200 L0,200 Z" fill="rgba(153,153,153,.25)"/>
+        <path d="M0,120 C240,90 420,130 720,98 C980,78 1200,122 1440,90 L1440,200 L0,200 Z" fill="#ffffff"/>
+      </svg>
+    </div>
+  </header>
+
+  <!-- О НАС -->
+  <section id="about" class="about">
+    <div class="container wrap">
+      <div class="photo-wrap">
+        <img class="photo" src="media/about.png" alt="О нашем саде" />
+        <span class="dot r1" aria-hidden="true"></span>
+        <span class="dot r2" aria-hidden="true"></span>
+        <span class="dot r3" aria-hidden="true"></span>
+        <span class="dot f1" aria-hidden="true"></span>
+        <span class="dot f2" aria-hidden="true"></span>
+        <span class="dot f3" aria-hidden="true"></span>
+      </div>
+      <div class="text">
+        <div class="title" data-key="aboutTitle">О НАС</div>
+        <div class="subtitle" data-key="aboutSubtitle">Реджио-детский сад</div>
+        <p data-key="aboutTextP1"></p>
+        <ul>
+          <li data-key="aboutList1"></li>
+          <li data-key="aboutList2"></li>
+          <li data-key="aboutList3"></li>
+          <li data-key="aboutList4"></li>
+          <li data-key="aboutList5"></li>
+          <li data-key="aboutList6"></li>
+          <li data-key="aboutList7"></li>
+          <li data-key="aboutList8"></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Жизнь в садике -->
+  <section id="life" class="life">
+    <div class="life-waves top" aria-hidden="true">
+      <svg viewBox="0 0 1440 160" preserveAspectRatio="none">
+        <path d="M0,70 C260,40 420,100 720,68 C1000,46 1200,96 1440,64 L1440,160 L0,160 Z" fill="#ffffff"/>
+        <path d="M0,110 C240,80 420,120 720,88 C980,68 1200,112 1440,80 L1440,160 L0,160 Z" fill="rgba(255,255,255,.7)"/>
+      </svg>
+    </div>
+
+    <div class="container life-inner">
+      <h2 class="life-title" data-key="lifeTitle"></h2>
+      <p class="life-quote">
+        <span data-key="lifeQuote"></span>
+        <span class="author" data-key="lifeQuoteAuthor"></span>
+      </p>
+      <div class="life-grid">
+        <img src="media/block1.jpg" alt="" class="sq" />
+        <img src="media/block3.jpg" alt="" class="sq" />
+        <img src="media/block4.jpg" alt="" class="sq" />
+        <img src="media/block5.jpg" alt="" class="sq" />
+        <img src="media/block6.jpg" alt="" class="sq" />
+        <img src="media/block7.jpg" alt="" class="sq" />
+        <img src="media/block8.jpg" alt="" class="sq" />
+        <img src="media/block9.jpg" alt="" class="sq" />
+      </div>
+    </div>
+
+    <div class="life-waves bottom" aria-hidden="true">
+      <svg viewBox="0 0 1440 160" preserveAspectRatio="none">
+        <path d="M0,70 C260,40 420,100 720,68 C1000,46 1200,96 1440,64 L1440,160 L0,160 Z" fill="#ffffff"/>
+        <path d="M0,110 C240,80 420,120 720,88 C980,68 1200,112 1440,80 L1440,160 L0,160 Z" fill="rgba(255,255,255,.7)"/>
+      </svg>
+    </div>
+
+    <div class="semis top-left" aria-hidden="true"><span class="semi first"></span><span class="semi second"></span></div>
+    <div class="semis bottom-right" aria-hidden="true"><span class="semi first"></span><span class="semi second"></span></div>
+  </section>
+
+  <!-- НАША КОМАНДА -->
+  <section id="team" class="team">
+    <div class="team-inner">
+      <div class="eyebrow" data-key="teamEyebrow"></div>
+      <h2 class="headline" data-key="teamHeadline"></h2>
+      <p class="sub" data-key="teamSub"></p>
+
+      <div class="team-list">
+        <article class="member" data-name-key="team1Name" data-text-key="team1Text">
+          <div class="avatar"><img class="img" src="media/ol.jpg" alt="Оля"></div>
+          <h3 class="name" data-key="team1Name"></h3>
+        </article>
+
+        <article class="member" data-name-key="team2Name" data-text-key="team2Text">
+          <div class="avatar"><img class="img" src="media/al.jpg" alt="Алена"></div>
+          <h3 class="name" data-key="team2Name"></h3>
+        </article>
+
+        <article class="member" data-name-key="team3Name" data-text-key="team3Text">
+          <div class="avatar"><img class="img" src="media/an.jpeg" alt="Аня"></div>
+          <h3 class="name" data-key="team3Name"></h3>
+        </article>
+
+        <article class="member" data-name-key="team4Name" data-text-key="team4Text">
+          <div class="avatar"><img class="img" src="media/na.jpeg" alt="Настя"></div>
+          <h3 class="name" data-key="team4Name"></h3>
+        </article>
+
+        <article class="member" data-name-key="team5Name" data-text-key="team5Text">
+          <div class="avatar"><img class="img" src="media/sv.jpg" alt="Света"></div>
+          <h3 class="name" data-key="team5Name"></h3>
+        </article>
+
+        <article class="member" data-name-key="team6Name" data-text-key="team6Text">
+          <div class="avatar"><img class="img" src="media/ir.jpeg" alt="Ира"></div>
+          <h3 class="name" data-key="team6Name"></h3>
+        </article>
+
+        <article class="member" data-name-key="team7Name" data-text-key="team7Text">
+          <div class="avatar"><img class="img" src="media/ma.jpeg" alt="Марина"></div>
+          <h3 class="name" data-key="team7Name"></h3>
+        </article>
+
+        <article class="member" data-name-key="team8Name" data-text-key="team8Text">
+          <div class="avatar"><img class="img" src="media/di.jpg" alt="Дима"></div>
+          <h3 class="name" data-key="team8Name"></h3>
+        </article>
+
+        <article class="member" data-name-key="team9Name" data-text-key="team9Text">
+          <div class="avatar"><img class="img" src="media/na1.jpg" alt="Настя"></div>
+          <h3 class="name" data-key="team9Name"></h3>
+        </article>
+      </div>
+    </div>
+
+    <div class="semis top-left" aria-hidden="true"><span class="semi first"></span><span class="semi second"></span></div>
+    <div class="semis bottom-right" aria-hidden="true"><span class="semi first"></span><span class="semi second"></span></div>
+  </section>
+
+  <!-- ЦЕНЫ -->
+  <section id="prices" class="prices wavy wave-top wave-bottom">
+    <div class="container">
+      <h2 data-key="pricesTitle"></h2>
+      <p class="note" data-key="pricesNote"></p>
+
+      <div class="price-panel">
+        <div class="price-grid">
+          <article class="tariff">
+            <div class="head" data-key="tariff1Head"></div>
+            <div class="body">
+              <div class="price" data-key="tariff1Price"></div>
+              <div class="period" data-key="tariff1Period"></div>
+              <div class="desc" data-key="tariff1Desc"></div>
+              <a class="btn-enroll" href="#contact-info" data-key="enrollBtn">Записаться</a>
+            </div>
+          </article>
+
+          <article class="tariff">
+            <div class="head" data-key="tariff2Head"></div>
+            <div class="body">
+              <div class="price" data-key="tariff2Price"></div>
+              <div class="period" data-key="tariff2Period"></div>
+              <div class="desc" data-key="tariff2Desc"></div>
+              <a class="btn-enroll" href="#contact-info" data-key="enrollBtn">Записаться</a>
+            </div>
+          </article>
+
+          <article class="tariff tariff--featured" aria-label="" data-aria-key="tariff3Aria">
+            <div class="head" data-key="tariff3Head"></div>
+            <div class="body">
+              <div class="price" data-key="tariff3Price"></div>
+              <div class="period" data-key="tariff3Period"></div>
+              <div class="desc" data-key="tariff3Desc"></div>
+              <a class="btn-enroll" href="#contact-info" data-key="enrollBtn">Записаться</a>
+            </div>
+          </article>
+
+          <article class="tariff">
+            <div class="head" data-key="tariff4Head"></div>
+            <div class="body">
+              <div class="price" data-key="tariff4Price"></div>
+              <div class="period" data-key="tariff4Period"></div>
+              <div class="desc" data-key="tariff4Desc"></div>
+              <a class="btn-enroll" href="#contact-info" data-key="enrollBtn">Записаться</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ДОПОЛНИТЕЛЬНЫЕ ЗАНЯТИЯ -->
+  <section id="extras" class="extras">
+    <div class="container">
+      <div class="eyebrow" data-key="extrasEyebrow"></div>
+      <h2 class="headline" data-key="extrasHeadline"></h2>
+      <p class="sub" data-key="extrasSub"></p>
+
+      <div class="extras-grid">
+        <article class="extra-card" data-card>
+          <div class="extra-bg" style="background-image:url('media/toddler2.png')"></div>
+          <div class="extra-title" data-html-key="extra1Title"></div>
+          <div class="extra-reveal">
+            <h3 data-key="extra1WhenTitle"></h3>
+            <p data-key="extra1WhenText"></p>
+            <p><strong data-key="extra1GoodForParentsTitle"></strong></p>
+            <p><em data-key="extra1ParentsLabel"></em></p>
+            <ul>
+              <li data-key="extra1P1"></li>
+              <li data-key="extra1P2"></li>
+              <li data-key="extra1P3"></li>
+            </ul>
+            <p><em data-key="extra1KidsLabel"></em></p>
+            <ul>
+              <li data-key="extra1K1"></li>
+              <li data-key="extra1K2"></li>
+              <li data-key="extra1K3"></li>
+            </ul>
+            <p><strong data-key="extra1LeadTitle"></strong><br>
+              <span data-key="extra1LeadText"></span></p>
+            <p><strong data-key="extra1PriceTitle"></strong> <span data-key="extra1Price"></span></p>
+          </div>
+        </article>
+
+        <article class="extra-card" data-card>
+          <div class="extra-bg" style="background-image:url('media/holiday.jpg')"></div>
+          <div class="extra-title" data-key="extra2Title"></div>
+          <div class="extra-reveal">
+            <h3 data-key="extra2H3"></h3>
+            <p data-key="extra2Dur"></p>
+            <ul>
+              <li data-key="extra2L1"></li>
+              <li data-key="extra2L2"></li>
+              <li data-key="extra2L3"></li>
+              <li data-key="extra2L4"></li>
+              <li data-key="extra2L5"></li>
+              <li data-key="extra2L6"></li>
+              <li data-key="extra2L7"></li>
+              <li data-key="extra2L8"></li>
+              <li data-key="extra2L9"></li>
+              <li data-key="extra2L10"></li>
+            </ul>
+            <p><strong data-key="extra2PriceTitle"></strong> <span data-key="extra2Price"></span></p>
+          </div>
+        </article>
+
+        <article class="extra-card" data-card>
+          <div class="extra-bg" style="background-image:url('media/2-1.png')"></div>
+          <div class="extra-title" data-key="extra3Title"></div>
+          <div class="extra-reveal">
+            <h3 data-key="extra3WhenTitle"></h3>
+            <p data-key="extra3WhenText"></p>
+            <p><strong data-key="extra3PlanTitle"></strong></p>
+            <ul>
+              <li data-key="extra3L1"></li>
+              <li data-key="extra3L2"></li>
+              <li data-key="extra3L3"></li>
+              <li data-key="extra3L4"></li>
+              <li data-key="extra3L5"></li>
+              <li data-key="extra3L6"></li>
+            </ul>
+            <p><strong data-key="extra2PriceTitle"></strong> <span data-key="extra3PriceWeek"></span></p>
+            <p><strong data-key="extra2PriceTitle"></strong> <span data-key="extra3PriceMonth"></span></p>
+          </div>
+        </article>
+
+        <article class="extra-card" data-card>
+          <div class="extra-bg" style="background-image:url('media/parents2.jpg')"></div>
+          <div class="extra-title" data-key="extra4Title"></div>
+          <div class="extra-reveal">
+            <p data-key="extra4P1"></p>
+            <p data-key="extra4P2"></p>
+            <p data-key="extra4P3"></p>
+            <p><strong data-key="extra1WhenTitle"></strong> <span data-key="extra4P4"></span></p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- КОНТАКТЫ -->
+  <section id="contacts" class="contacts">
+    <div class="container">
+      <div class="map-wrap">
+        <iframe src="https://yandex.ru/map-widget/v1/?um=constructor%3A63306f8dbc05a864bc8fe430199c367a52b7b46a8809bc2297ee8b2e68a0125e&amp;source=constructor" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+      <div class="info" id="contact-info">
+        <h2 data-key="contactsTitle"></h2>
+
+        <div class="info-list">
+          <div class="info-item">
+            <!-- location -->
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div>
+              <span data-key="contactsAddr"></span><br>
+              <span class="small" data-key="contactsHours"></span>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <!-- phone -->
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 4l4 2-2 4a14 14 0 0 0 7 7l4-2 2 6 3-4 5-12z" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div>
+              <div data-key="contactsPhoneLabel"></div>
+              <a href="tel:79161964999" data-key="contactsPhone">+7 (916) 196-4999</a>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <!-- tg -->
+            <svg viewBox="0 0 24 24" fill="none"><path d="M21 3L3 11l6 2 2 6 3-4 5-12z" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div>
+              <span data-key="contactsTGLabel"></span>
+              <a href="https://t.me/reggio_stihiya" target="_blank" rel="noopener" data-key="contactsTGText">наш канал</a>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <!-- vk -->
+            <svg viewBox="0 0 24 24" fill="none"><path d="M3 7h4l2 4 2-4h4l-4 6 4 6h-4l-2-4-2 4H3l5-6L3 7z" stroke="currentColor" stroke-width="1.6"/></svg>
+            <div>
+              <span data-key="contactsVKLabel"></span>
+              <a href="https://vk.com/public211383023" target="_blank" rel="noopener" data-key="contactsVKText">наша группа</a>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <!-- ig -->
+            <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+            <div>
+              <span data-key="contactsIGLabel"></span>
+              <a href="https://instagram.com/reggio_stihiya" target="_blank" rel="noopener" data-key="contactsIGText">наша страничка</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-line" style="text-align:center; margin-top:20px;" data-key="footerCopyright">
+          Стихия © 2025. All Rights Reserved.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="./content.js?v=1" defer></script>
+  <script src="./script.js?v=1" defer></script>
+  
+</body>
+</html>
