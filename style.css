@@ -358,3 +358,20 @@ body{
   stroke-width: 2.4;
   stroke-dasharray: 2 12;
 }
+.node__title {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.node__sub {
+  font-size: 14px;
+}
+
+.panel__desc,
+.panel__list {
+  font-size: 15px;
+  line-height: 1.45;
+}
+.lens, .btn, .brand__title, .node__title, .panel__title, .modal__title{
+  font-size: 2.2em;
+}
