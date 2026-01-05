@@ -3,208 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Живая карта Лаборатории Оживления</title>
+    <title>Лаборатория Оживления | Игровая карта</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         :root {
-            --parent-color: #FF9800; /* Оранжевый */
-            --child-color: #4CAF50;   /* Зеленый */
-            --inspiration-color: #9C27B0; /* Фиолетовый */
-            --engineer-color: #2196F3; /* Синий */
-            --dark-bg: #0f172a;
-            --card-bg: #1e293b;
-            --text-light: #f8fafc;
-            --text-muted: #94a3b8;
+            --primary: #2C3E50;
+            --secondary: #34495E;
+            --accent-blue: #3498DB;
+            --accent-green: #2ECC71;
+            --accent-yellow: #F1C40F;
+            --accent-purple: #9B59B6;
+            --light: #ECF0F1;
+            --light-gray: #BDC3C7;
+            --grid-color: rgba(189, 195, 199, 0.2);
         }
 
         body {
-            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a237e 100%);
-            color: var(--text-light);
+            background-color: #f8fafc;
+            color: var(--primary);
             min-height: 100vh;
-            padding: 20px;
-            overflow-x: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
+            font-family: 'Vasek Italic_0'
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
+        /* Фон с клеткой */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            pointer-events: none;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        h1 {
-            font-size: 2.8rem;
-            background: linear-gradient(90deg, var(--parent-color), var(--child-color));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-            color: var(--text-muted);
-            max-width: 800px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
-
-        /* Панель линз */
-        .lens-controls {
+        /* Шапка с переключателями линз */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px 40px;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 40px;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
         }
 
-        .lens-btn {
-            padding: 15px 25px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
             display: flex;
             align-items: center;
             gap: 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
-        .lens-btn i {
-            font-size: 1.3rem;
+        .logo span {
+            color: var(--accent-blue);
+        }
+
+        .lens-switcher {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lens-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--light);
+            color: var(--secondary);
         }
 
         .lens-btn.active {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
         }
 
-        #parent-lens {
-            background-color: var(--parent-color);
-            color: white;
+        .lens-btn i {
+            font-size: 1.1rem;
         }
-        #child-lens {
-            background-color: var(--child-color);
-            color: white;
-        }
-        #inspiration-lens {
-            background-color: var(--inspiration-color);
-            color: white;
-        }
-        #engineer-lens {
-            background-color: var(--engineer-color);
+
+        #participants-lens.active {
+            background-color: var(--accent-blue);
             color: white;
         }
 
-        #mix-lens {
-            background: linear-gradient(90deg, var(--parent-color), var(--child-color), var(--inspiration-color), var(--engineer-color));
+        #parents-lens.active {
+            background-color: var(--accent-green);
             color: white;
         }
 
-        /* Основной контент */
-        .main-content {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 30px;
-            margin-bottom: 40px;
+        #inspiration-lens.active {
+            background-color: var(--accent-purple);
+            color: white;
         }
 
-        .tree-container {
-            flex: 3;
-            min-width: 300px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 25px;
-            min-height: 600px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        #start-lens.active {
+            background-color: var(--accent-yellow);
+            color: var(--primary);
+        }
+
+        /* Основное поле игры */
+        .game-board {
             position: relative;
+            margin-top: 100px;
+            padding: 60px 40px;
+            min-width: 1800px;
+            height: calc(100vh - 160px);
             overflow: auto;
         }
 
-        .content-panel {
-            flex: 2;
-            min-width: 300px;
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .panel-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .panel-icon {
-            font-size: 2.5rem;
-        }
-
-        .panel-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-
-        .panel-subtitle {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            margin-bottom: 25px;
-        }
-
-        .panel-content {
-            line-height: 1.7;
-        }
-
-        .panel-content ul {
-            list-style-type: none;
-            padding-left: 0;
-        }
-
-        .panel-content li {
-            margin-bottom: 15px;
-            padding-left: 25px;
+        /* Контейнер для горизонтального пути */
+        .path-container {
             position: relative;
-        }
-
-        .panel-content li:before {
-            content: "•";
-            position: absolute;
-            left: 0;
-            color: currentColor;
-            font-size: 1.5rem;
-        }
-
-        /* Дерево-граф */
-        .tree {
-            position: relative;
-            width: 100%;
             height: 100%;
-            min-height: 550px;
+            min-height: 600px;
         }
 
-        .node {
+        /* Основная дорожка */
+        .main-path {
             position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background-color: var(--accent-blue);
+            border-radius: 4px;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        /* Узлы на дорожке */
+        .path-node {
+            position: absolute;
+            top: 50%;
             width: 120px;
             height: 120px;
             border-radius: 50%;
@@ -213,180 +170,330 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 15px;
+            transform: translate(-50%, -50%);
             cursor: pointer;
+            z-index: 100;
             transition: all 0.3s ease;
-            z-index: 2;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            background: var(--card-bg);
-            border: 3px solid transparent;
+            background-color: white;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border: 4px solid transparent;
         }
 
-        .node:hover {
-            transform: scale(1.1);
-            z-index: 10;
+        .path-node:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+            z-index: 200;
         }
 
-        .node.active {
-            border-width: 5px;
-            transform: scale(1.05);
+        .path-node.active {
+            border-color: var(--accent-blue);
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
         }
 
         .node-icon {
-            font-size: 1.8rem;
+            font-size: 2.2rem;
             margin-bottom: 8px;
         }
 
         .node-title {
-            font-weight: 600;
-            font-size: 0.9rem;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--primary);
         }
 
-        .connection {
+        /* Декорации пути: лестницы, горки */
+        .path-decoration {
             position: absolute;
-            background: rgba(255, 255, 255, 0.2);
-            z-index: 1;
+            z-index: 50;
         }
 
-        /* Футер */
-        footer {
-            text-align: center;
-            padding: 20px;
-            color: var(--text-muted);
+        .ladder {
+            width: 40px;
+            height: 150px;
+            background: linear-gradient(90deg, 
+                var(--accent-green) 0%, 
+                var(--accent-green) 30%, 
+                transparent 30%, 
+                transparent 70%, 
+                var(--accent-green) 70%, 
+                var(--accent-green) 100%);
+            background-size: 10px 10px;
+        }
+
+        .slide {
+            width: 120px;
+            height: 60px;
+            border-radius: 0 0 60px 60px;
+            background: var(--accent-yellow);
+        }
+
+        /* Плавающие слова вокруг узлов */
+        .floating-words {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 150;
+        }
+
+        .word {
+            position: absolute;
+            font-size: 0.85rem;
+            font-weight: 500;
+            opacity: 0.7;
+            color: var(--secondary);
+            white-space: nowrap;
+            animation: floatAround 15s infinite linear;
+        }
+
+        @keyframes floatAround {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            25% {
+                transform: translate(40px, -30px) rotate(90deg);
+            }
+            50% {
+                transform: translate(0, -60px) rotate(180deg);
+            }
+            75% {
+                transform: translate(-40px, -30px) rotate(270deg);
+            }
+            100% {
+                transform: translate(0, 0) rotate(360deg);
+            }
+        }
+
+        /* Панель информации */
+        .info-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 25px 40px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transform: translateY(100%);
+            transition: transform 0.5s ease;
+        }
+
+        .info-panel.active {
+            transform: translateY(0);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .panel-icon {
+            font-size: 2rem;
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .panel-lens {
             font-size: 0.9rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin-top: 20px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
         }
 
-        /* Адаптивность */
-        @media (max-width: 1100px) {
-            .main-content {
-                flex-direction: column;
-            }
-            
-            .tree-container, .content-panel {
-                width: 100%;
-            }
+        .panel-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
         }
 
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .lens-btn {
-                padding: 12px 20px;
-                font-size: 1rem;
-            }
-            
-            .node {
-                width: 100px;
-                height: 100px;
-                padding: 10px;
-            }
+        .content-block h4 {
+            margin-bottom: 10px;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .content-block ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .content-block li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .content-block li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--accent-blue);
+        }
+
+        /* Кнопка закрытия панели */
+        .close-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--light-gray);
+            transition: color 0.3s;
+        }
+
+        .close-panel:hover {
+            color: var(--primary);
+        }
+
+        /* Инструкция */
+        .instructions {
+            position: fixed;
+            top: 100px;
+            right: 40px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            max-width: 300px;
+            z-index: 500;
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .instructions p {
+            font-size: 0.9rem;
+            color: var(--secondary);
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Живая карта Лаборатории Оживления</h1>
-            <p class="subtitle">Надень нужные линзы, чтобы увидеть путь от детской идеи до воплощённой игры. Каждый этап раскрывается с четырёх разных точек зрения.</p>
-        </header>
-
-        <div class="lens-controls">
-            <button class="lens-btn active" id="parent-lens">
-                <i class="fas fa-eye"></i> Линза Родителя
+    <!-- Шапка с переключателями линз -->
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-microscope"></i>
+            Лаборатория <span>Оживления</span>
+        </div>
+        
+        <div class="lens-switcher">
+            <button class="lens-btn active" id="participants-lens">
+                <i class="fas fa-users"></i> Для участников
             </button>
-            <button class="lens-btn" id="child-lens">
-                <i class="fas fa-rocket"></i> Линза Ребёнка
+            <button class="lens-btn" id="parents-lens">
+                <i class="fas fa-user-friends"></i> Для родителей
             </button>
             <button class="lens-btn" id="inspiration-lens">
-                <i class="fas fa-brain"></i> Линза Вдохновения
+                <i class="fas fa-lightbulb"></i> Для вдохновения
             </button>
-            <button class="lens-btn" id="engineer-lens">
-                <i class="fas fa-tools"></i> Линза Инженера
-            </button>
-            <button class="lens-btn" id="mix-lens">
-                <i class="fas fa-blend"></i> Смешать линзы
+            <button class="lens-btn" id="start-lens">
+                <i class="fas fa-play"></i> Для начала
             </button>
         </div>
+    </div>
 
-        <div class="main-content">
-            <div class="tree-container">
-                <div class="tree" id="tree">
-                    <!-- Дерево будет сгенерировано JavaScript -->
-                    <div class="connection" id="connection1"></div>
-                    <div class="connection" id="connection2"></div>
-                    <div class="connection" id="connection3"></div>
-                    <div class="connection" id="connection4"></div>
-                    <div class="connection" id="connection5"></div>
-                    <div class="connection" id="connection6"></div>
-                    
-                    <!-- Узлы дерева -->
-                    <div class="node" id="node1" style="top: 50px; left: 50%; transform: translateX(-50%);" data-node="idea">
-                        <div class="node-icon">💡</div>
-                        <div class="node-title">Идея</div>
-                    </div>
-                    
-                    <div class="node" id="node2" style="top: 200px; left: 20%;" data-node="character">
-                        <div class="node-icon">🧙</div>
-                        <div class="node-title">Характер</div>
-                    </div>
-                    
-                    <div class="node" id="node3" style="top: 200px; left: 80%;" data-node="visualization">
-                        <div class="node-icon">🎨</div>
-                        <div class="node-title">Визуализация</div>
-                    </div>
-                    
-                    <div class="node" id="node4" style="top: 350px; left: 10%;" data-node="sound">
-                        <div class="node-icon">🎵</div>
-                        <div class="node-title">Озвучка</div>
-                    </div>
-                    
-                    <div class="node" id="node5" style="top: 350px; left: 40%;" data-node="physical">
-                        <div class="node-icon">🏗️</div>
-                        <div class="node-title">Физическое воплощение</div>
-                    </div>
-                    
-                    <div class="node" id="node6" style="top: 350px; left: 70%;" data-node="code">
-                        <div class="node-icon">👨‍💻</div>
-                        <div class="node-title">Программирование души</div>
-                    </div>
-                    
-                    <div class="node" id="node7" style="top: 500px; left: 50%; transform: translateX(-50%);" data-node="polygon">
-                        <div class="node-icon">🎪</div>
-                        <div class="node-title">Полигон (Игра)</div>
-                    </div>
-                </div>
+    <!-- Игровое поле -->
+    <div class="game-board">
+        <div class="path-container">
+            <!-- Основная дорожка -->
+            <div class="main-path"></div>
+            
+            <!-- Декорации пути -->
+            <div class="path-decoration ladder" style="left: 15%; top: 30%;"></div>
+            <div class="path-decoration slide" style="left: 45%; top: 60%;"></div>
+            <div class="path-decoration ladder" style="left: 75%; top: 20%; transform: rotate(15deg);"></div>
+            
+            <!-- Узлы пути -->
+            <div class="path-node" id="node-idea" style="left: 10%;" data-node="idea">
+                <div class="node-icon">💡</div>
+                <div class="node-title">Идея</div>
+                <div class="floating-words" id="words-idea"></div>
             </div>
-
-            <div class="content-panel">
-                <div class="panel-header">
-                    <div class="panel-icon" id="panel-icon">💡</div>
-                    <div>
-                        <div class="panel-title" id="panel-title">Идея</div>
-                        <div class="panel-subtitle" id="panel-subtitle">Смотреть через: <span id="current-lens">Линза Родителя</span></div>
-                    </div>
-                </div>
-                
-                <div class="panel-content" id="panel-content">
-                    <p>Выберите этап на карте слева, чтобы увидеть его содержание через выбранную линзу.</p>
-                    <p>Каждый этап цикла раскрывается по-разному:</p>
-                    <ul>
-                        <li><strong>Родитель</strong>: развитие и практическая польза</li>
-                        <li><strong>Ребёнок</strong>: возможности и игра</li>
-                        <li><strong>Вдохновение</strong>: референсы и идеи</li>
-                        <li><strong>Инженер</strong>: инструменты и вопросы для реализации</li>
-                    </ul>
-                </div>
+            
+            <div class="path-node" id="node-character" style="left: 25%;" data-node="character">
+                <div class="node-icon">🧙</div>
+                <div class="node-title">Характер</div>
+                <div class="floating-words" id="words-character"></div>
+            </div>
+            
+            <div class="path-node" id="node-visualization" style="left: 40%;" data-node="visualization">
+                <div class="node-icon">🎨</div>
+                <div class="node-title">Визуализация</div>
+                <div class="floating-words" id="words-visualization"></div>
+            </div>
+            
+            <div class="path-node" id="node-sound" style="left: 55%;" data-node="sound">
+                <div class="node-icon">🎵</div>
+                <div class="node-title">Озвучка</div>
+                <div class="floating-words" id="words-sound"></div>
+            </div>
+            
+            <div class="path-node" id="node-physical" style="left: 70%;" data-node="physical">
+                <div class="node-icon">🏗️</div>
+                <div class="node-title">Воплощение</div>
+                <div class="floating-words" id="words-physical"></div>
+            </div>
+            
+            <div class="path-node" id="node-code" style="left: 85%;" data-node="code">
+                <div class="node-icon">👨‍💻</div>
+                <div class="node-title">Программирование</div>
+                <div class="floating-words" id="words-code"></div>
             </div>
         </div>
+    </div>
 
-        <footer>
-            <p>Лаборатория Оживления &copy; 2026 | От нейрона — через картон и код — до игры</p>
-            <p style="margin-top: 5px; font-size: 0.8rem;">Это интерактивная карта методологии. Каждый клик открывает новую перспективу.</p>
-        </footer>
+    <!-- Панель информации -->
+    <div class="info-panel" id="info-panel">
+        <button class="close-panel" id="close-panel">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="panel-header">
+            <div class="panel-icon" id="panel-icon">💡</div>
+            <div>
+                <div class="panel-title" id="panel-title">Идея</div>
+                <div class="panel-lens" id="panel-lens" style="background-color: var(--accent-blue); color: white; display: inline-block;">Для участников</div>
+            </div>
+        </div>
+        
+        <div class="panel-content" id="panel-content">
+            <div class="content-block">
+                <h4>Что это?</h4>
+                <ul>
+                    <li>Зарождение проекта</li>
+                    <li>Поиск вдохновения</li>
+                    <li>Формулировка замысла</li>
+                </ul>
+            </div>
+            <div class="content-block">
+                <h4>Что получаем?</h4>
+                <ul>
+                    <li>Первичную концепцию</li>
+                    <li>Направление развития</li>
+                    <li>Энтузиазм и мотивацию</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Инструкция -->
+    <div class="instructions">
+        <h3>Как использовать карту</h3>
+        <p>1. Выберите одну из перспектив вверху страницы</p>
+        <p>2. Кликните на любой этап на игровом поле</p>
+        <p>3. Смотрите летающие слова вокруг этапов — они меняются в зависимости от выбранной перспективы</p>
+        <p>4. Подробная информация откроется в панели внизу</p>
     </div>
 
     <script>
@@ -395,330 +502,315 @@
             'idea': {
                 title: 'Идея',
                 icon: '💡',
-                parent: {
-                    title: 'Услышать и принять фантазию',
-                    content: `<p>Этап, где мы учимся <strong>слушать</strong> и <strong>принимать</strong> детскую фантазию без оценок и правок.</p>
-                    <ul>
-                        <li>Развитие доверительных отношений с ребёнком</li>
-                        <li>Поддержка креативного мышления</li>
-                        <li>Практика активного слушания</li>
-                        <li>Понимание внутреннего мира ребёнка</li>
-                    </ul>`
+                participants: {
+                    words: ['фантазия', 'мечта', 'замысел', 'вдохновение', 'искра', 'образ', 'задумка'],
+                    description: {
+                        what: ['Зарождение проекта', 'Поиск вдохновения', 'Формулировка замысла'],
+                        result: ['Первичная концепция', 'Направление развития', 'Энтузиазм и мотивация']
+                    }
                 },
-                child: {
-                    title: 'Моя идея важна!',
-                    content: `<p>Здесь можно придумать <strong>что угодно</strong>, и тебя поймут! Никто не скажет "это невозможно" или "глупости".</p>
-                    <ul>
-                        <li>Рассказать про дракона, который ест облака</li>
-                        <li>Придумать страну, где реки из лимонада</li>
-                        <li>Создать героя с суперсилой дружбы</li>
-                        <li>Просто помечтать вслух, а кто-то записывает</li>
-                    </ul>`
+                parents: {
+                    words: ['развитие', 'творчество', 'воображение', 'поддержка', 'внимание', 'диалог'],
+                    description: {
+                        what: ['Услышать детскую фантазию', 'Поддержать интерес', 'Направить энергию'],
+                        result: ['Укрепление связи', 'Понимание увлечений', 'Совместное творчество']
+                    }
                 },
                 inspiration: {
-                    title: 'Источники идей',
-                    content: `<p>Откуда берутся гениальные идеи? Вот несколько катализаторов воображения:</p>
-                    <ul>
-                        <li><strong>Книги:</strong> "Где живут чудовища", "Алиса в Стране чудес", сказки народов мира</li>
-                        <li><strong>Игры:</strong> Minecraft, Journey, Shelter — миры без границ</li>
-                        <li><strong>Природа:</strong> странные камни, форма облаков, узоры на коре</li>
-                        <li><strong>Вопросы-провокации:</strong> "Что, если луна сделана из сыра?", "А если бы у тебя был хвост?"</li>
-                    </ul>`
+                    words: ['книги', 'фильмы', 'природа', 'игры', 'искусство', 'музыка', 'путешествия'],
+                    description: {
+                        what: ['Изучение источников', 'Накопление впечатлений', 'Поиск референсов'],
+                        result: ['Библиотека идей', 'Творческий багаж', 'Визуальный словарь']
+                    }
                 },
-                engineer: {
-                    title: 'Инструменты фиксации',
-                    content: `<p>Как помочь идее не улетучиться? Техники и вопросы для первого этапа:</p>
-                    <ul>
-                        <li><strong>Вопросы для раскрытия:</strong><br>
-                        - "Расскажи подробнее, как он выглядит?"<br>
-                        - "Что он любит больше всего?"<br>
-                        - "Чего он боится?"<br>
-                        - "У него есть друзья? Кто они?"</li>
-                        <li><strong>Методы:</strong> Ментальные карты, диктофон, быстрые зарисовки</li>
-                        <li><strong>Правило:</strong> "Да, и..." — принимаем любую идею и добавляем к ней</li>
-                    </ul>`
+                start: {
+                    words: ['вопросы', 'интервью', 'мозговой штурм', 'запись', 'обсуждение', 'карта мыслей'],
+                    description: {
+                        what: ['Задавать открытые вопросы', 'Проводить интервью', 'Фиксировать мысли'],
+                        result: ['Структурированная идея', 'Чёткое направление', 'План действий']
+                    }
                 }
             },
             'sound': {
                 title: 'Озвучка',
                 icon: '🎵',
-                parent: {
-                    title: 'Изучение звукового мира',
-                    content: `<p>Этап, где ребёнок знакомится с физикой звука, техникой и своим голосом как инструментом.</p>
-                    <ul>
-                        <li>Понимание основ акустики и тембра</li>
-                        <li>Развитие абстрактного мышления (как звучит эмоция?)</li>
-                        <li>Работа с дыханием и голосом как инструментом уверенности</li>
-                        <li>Первое знакомство с digital-инструментами (семплер, редактор)</li>
-                    </ul>`
+                participants: {
+                    words: ['голос', 'эмоции', 'инструменты', 'эксперимент', 'игра', 'звуки', 'мелодия'],
+                    description: {
+                        what: ['Озвучивание персонажа', 'Эксперименты с голосом', 'Создание звукового образа'],
+                        result: ['Уникальный голос героя', 'Навыки звукозаписи', 'Музыкальная композиция']
+                    }
                 },
-                child: {
-                    title: 'Дать голос своему дракону!',
-                    content: `<p>Наконец-то можно покричать, похрюкать, записать смех и превратить его в рык!</p>
-                    <ul>
-                        <li>Круто поиграть на всех кнопках и струнах</li>
-                        <li>Записать свой смех и превратить его в рык</li>
-                        <li>Озвучить целую битву с друзьями</li>
-                        <li>Услышать, как твой персонаж оживает</li>
-                    </ul>`
+                parents: {
+                    words: ['слух', 'ритм', 'выражение', 'уверенность', 'техника', 'координация', 'чувства'],
+                    description: {
+                        what: ['Развитие слухового восприятия', 'Работа с эмоциями через звук', 'Техники голосообразования'],
+                        result: ['Улучшение дикции и речи', 'Умение выражать эмоции', 'Музыкальная грамотность']
+                    }
                 },
                 inspiration: {
-                    title: 'Библиотека звуковых вселенных',
-                    content: `<p>Звуковой ландшафт — это целое искусство. Вот что может вдохновить:</p>
-                    <ul>
-                        <li><strong>Фильмы:</strong> как создавали звуки для "Звёздных войн" или "ВАЛЛ-И"</li>
-                        <li><strong>Игры:</strong> саундскейпы Ori and the Blind Forest, Journey</li>
-                        <li><strong>Природа:</strong> звуки леса, океана, гор — бесплатные библиотеки</li>
-                        <li><strong>Инструменты:</strong> терменвокс, калимба, музыка бокалов</li>
-                    </ul>`
+                    words: ['саундтреки', 'природа', 'инструменты', 'эффекты', 'голоса', 'атмосфера', 'шум'],
+                    description: {
+                        what: ['Изучение звукового дизайна', 'Сбор звуковой библиотеки', 'Анализ аудио-решений'],
+                        result: ['Коллекция звуков', 'Понимание аудио-атмосферы', 'Референсы для вдохновения']
+                    }
                 },
-                engineer: {
-                    title: 'Мастерская звукозаписи',
-                    content: `<p>Практические вопросы и инструменты для создания звукового образа:</p>
-                    <ul>
-                        <li><strong>Вопросы для раскрытия характера через звук:</strong><br>
-                        - "Твой персонаж большой или маленький? Как меняется голос?"<br>
-                        - "Он двигается быстро или медленно? Как звучат шаги?"<br>
-                        - "Какое у него самое любимое дело? Какой звук оно издаёт?"<br>
-                        - "А если он испугается? Засмеётся? Загрустит?"<br>
-                        - "Он говорит на языке людей или у него свой? (пощелкивание, свист)"</li>
-                        <li><strong>Инструменты:</strong> Audacity (бесплатно), онлайн-семплеры, смартфон как диктофон</li>
-                        <li><strong>Техники:</strong> Foley-артист (создание звуков из подручных средств)</li>
-                    </ul>`
+                start: {
+                    words: ['запись', 'семплы', 'монтаж', 'тональность', 'темп', 'эффекты', 'микширование'],
+                    description: {
+                        what: ['Запись голоса и звуков', 'Работа с аудио-редактором', 'Создание звуковых эффектов'],
+                        result: ['Готовый аудио-трек', 'Навыки работы с софтом', 'Библиотека звуков']
+                    }
                 }
             },
-            'polygon': {
-                title: 'Полигон (Игра)',
-                icon: '🎪',
-                parent: {
-                    title: 'Социализация и мягкие навыки',
-                    content: `<p>Этап, где проект становится социальным опытом, развивающим ключевые навыки для жизни.</p>
-                    <ul>
-                        <li>Развитие коммуникации и командной работы</li>
-                        <li>Управление эмоциями в игровых конфликтах</li>
-                        <li>Импровизация и адаптивность к изменяющимся условиям</li>
-                        <li>Телесное осознание и координация</li>
-                        <li>Презентация своего творения перед "публикой"</li>
-                    </ul>`
+            'code': {
+                title: 'Программирование',
+                icon: '👨‍💻',
+                participants: {
+                    words: ['логика', 'алгоритм', 'интерактив', 'анимация', 'игра', 'управление', 'скрипты'],
+                    description: {
+                        what: ['Создание интерактивных элементов', 'Программирование поведения', 'Разработка игровой механики'],
+                        result: ['Рабочий прототип', 'Навыки программирования', 'Интерактивный проект']
+                    }
                 },
-                child: {
-                    title: 'Наконец-то ИГРАТЬ!',
-                    content: `<p>Цель всего пути! Бегать, прятаться, кричать "тыдыщ!", отыгрывать своего героя!</p>
-                    <ul>
-                        <li>Показать своего персонажа друзьям</li>
-                        <li>Устроить настоящее приключение с битвами и загадками</li>
-                        <li>Почувствовать себя режиссёром своей истории</li>
-                        <li>Просто весело провести время в придуманном мире</li>
-                    </ul>`
+                parents: {
+                    words: ['мышление', 'логика', 'решение задач', 'технологии', 'будущее', 'образование', 'навыки'],
+                    description: {
+                        what: ['Развитие логического мышления', 'Обучение основам алгоритмизации', 'Понимание цифровых технологий'],
+                        result: ['Цифровая грамотность', 'Навыки решения задач', 'Подготовка к будущему']
+                    }
                 },
                 inspiration: {
-                    title: 'Игровые вселенные',
-                    content: `<p>Примеры того, как можно играть в созданные миры:</p>
-                    <ul>
-                        <li><strong>Форматы:</strong> LARP (ролевая игра живого действия), настольные RPG, иммерсивный театр</li>
-                        <li><strong>Примеры:</strong> фестиваль "Драккар", детские ролевые игры в стиле "Хогвартс"</li>
-                        <li><strong>Правила:</strong> простые системы вроде "Дungeons & Dragons для детей"</li>
-                        <li><strong>Декорации:</strong> как создать атмосферу с минимальными средствами</li>
-                    </ul>`
+                    words: ['игры', 'анимации', 'интерфейсы', 'скрипты', 'алгоритмы', 'технологии', 'инновации'],
+                    description: {
+                        what: ['Изучение существующих решений', 'Анализ интерактивных проектов', 'Поиск креативных подходов'],
+                        result: ['Библиотека технических решений', 'Понимание возможностей', 'Идеи для реализации']
+                    }
                 },
-                engineer: {
-                    title: 'Организация игрового пространства',
-                    content: `<p>Техническая сторона превращения идеи в игру:</p>
-                    <ul>
-                        <li><strong>Безопасность:</strong> правила СТОП-слова, мягкое покрытие, безопасный реквизит</li>
-                        <li><strong>Структура игры:</strong> цель, правила, роли, длительность</li>
-                        <li><strong>Модульность:</strong> как быстро менять пространство под разные сценарии</li>
-                        <li><strong>Инструменты:</strong> таймер, карта локаций, карточки персонажей, звуковое сопровождение</li>
-                        <li><strong>Чек-лист:</strong> "Пространство проверено, правила объяснены, все понимают цель"</li>
-                    </ul>`
+                start: {
+                    words: ['блоки', 'среда', 'команды', 'тестирование', 'отладка', 'оптимизация', 'документация'],
+                    description: {
+                        what: ['Работа в визуальной среде', 'Написание и тестирование кода', 'Пошаговая отладка'],
+                        result: ['Рабочий код', 'Навыки отладки', 'Документация проекта']
+                    }
                 }
             }
         };
 
         // Текущее состояние
-        let currentLens = 'parent';
+        let currentLens = 'participants';
         let currentNode = 'idea';
-        
-        // Элементы DOM
-        const lensButtons = document.querySelectorAll('.lens-btn');
-        const nodes = document.querySelectorAll('.node');
-        const panelTitle = document.getElementById('panel-title');
-        const panelSubtitle = document.getElementById('panel-subtitle');
-        const panelIcon = document.getElementById('panel-icon');
-        const panelContent = document.getElementById('panel-content');
-        const currentLensSpan = document.getElementById('current-lens');
-        
-        // Функция обновления панели контента
-        function updateContentPanel() {
+        let floatingWords = {};
+
+        // Инициализация летающих слов
+        function initFloatingWords() {
+            const nodes = ['idea', 'character', 'visualization', 'sound', 'physical', 'code'];
+            
+            nodes.forEach(nodeId => {
+                const node = document.getElementById(`node-${nodeId}`);
+                const wordsContainer = document.getElementById(`words-${nodeId}`);
+                
+                // Создаем слова для каждого узла (по умолчанию для participants)
+                floatingWords[nodeId] = nodeData[nodeId] ? 
+                    nodeData[nodeId].participants.words : 
+                    ['творчество', 'развитие', 'игра', 'обучение', 'проект', 'вдохновение'];
+                
+                // Создаем элементы слов
+                floatingWords[nodeId].forEach((word, index) => {
+                    const wordEl = document.createElement('div');
+                    wordEl.className = 'word';
+                    wordEl.textContent = word;
+                    wordEl.style.animationDelay = `${index * 2}s`;
+                    
+                    // Располагаем слова по кругу
+                    const angle = (index / floatingWords[nodeId].length) * 2 * Math.PI;
+                    const radius = 100;
+                    const x = radius * Math.cos(angle);
+                    const y = radius * Math.sin(angle);
+                    
+                    wordEl.style.left = `calc(50% + ${x}px)`;
+                    wordEl.style.top = `calc(50% + ${y}px)`;
+                    
+                    wordsContainer.appendChild(wordEl);
+                });
+            });
+        }
+
+        // Обновление летающих слов при смене линзы
+        function updateFloatingWords() {
+            const nodes = ['idea', 'character', 'visualization', 'sound', 'physical', 'code'];
+            
+            nodes.forEach(nodeId => {
+                const wordsContainer = document.getElementById(`words-${nodeId}`);
+                wordsContainer.innerHTML = '';
+                
+                // Получаем слова для текущей линзы
+                let words = [];
+                if (nodeData[nodeId] && nodeData[nodeId][currentLens]) {
+                    words = nodeData[nodeId][currentLens].words;
+                } else {
+                    // Запасной вариант
+                    words = ['творчество', 'развитие', 'игра', 'обучение', 'проект', 'вдохновение'];
+                }
+                
+                // Создаем новые слова
+                words.forEach((word, index) => {
+                    const wordEl = document.createElement('div');
+                    wordEl.className = 'word';
+                    wordEl.textContent = word;
+                    wordEl.style.animationDelay = `${index * 2}s`;
+                    
+                    // Располагаем слова по кругу
+                    const angle = (index / words.length) * 2 * Math.PI;
+                    const radius = 100;
+                    const x = radius * Math.cos(angle);
+                    const y = radius * Math.sin(angle);
+                    
+                    wordEl.style.left = `calc(50% + ${x}px)`;
+                    wordEl.style.top = `calc(50% + ${y}px)`;
+                    
+                    wordsContainer.appendChild(wordEl);
+                });
+            });
+        }
+
+        // Обновление информационной панели
+        function updateInfoPanel() {
             const node = nodeData[currentNode];
+            if (!node) return;
+            
             const lensData = node[currentLens];
             
-            panelTitle.textContent = lensData.title;
-            panelIcon.textContent = node.icon;
-            currentLensSpan.textContent = getLensName(currentLens);
+            document.getElementById('panel-title').textContent = node.title;
+            document.getElementById('panel-icon').textContent = node.icon;
             
-            // Обновляем подзаголовок в зависимости от линзы
-            let lensDescription = '';
+            // Обновляем цвет метки линзы
+            const panelLens = document.getElementById('panel-lens');
+            panelLens.textContent = getLensName(currentLens);
+            
+            // Устанавливаем цвет в зависимости от линзы
             switch(currentLens) {
-                case 'parent': lensDescription = 'Развитие и практическая польза'; break;
-                case 'child': lensDescription = 'Возможности и игра'; break;
-                case 'inspiration': lensDescription = 'Референсы и идеи'; break;
-                case 'engineer': lensDescription = 'Инструменты и вопросы для реализации'; break;
+                case 'participants':
+                    panelLens.style.backgroundColor = 'var(--accent-blue)';
+                    panelLens.style.color = 'white';
+                    break;
+                case 'parents':
+                    panelLens.style.backgroundColor = 'var(--accent-green)';
+                    panelLens.style.color = 'white';
+                    break;
+                case 'inspiration':
+                    panelLens.style.backgroundColor = 'var(--accent-purple)';
+                    panelLens.style.color = 'white';
+                    break;
+                case 'start':
+                    panelLens.style.backgroundColor = 'var(--accent-yellow)';
+                    panelLens.style.color = 'var(--primary)';
+                    break;
             }
-            panelSubtitle.innerHTML = `Смотреть через: <strong>${getLensName(currentLens)}</strong> • ${lensDescription}`;
             
-            panelContent.innerHTML = lensData.content;
+            // Обновляем содержимое
+            const panelContent = document.getElementById('panel-content');
+            panelContent.innerHTML = '';
             
-            // Обновляем цвет границы узлов в зависимости от линзы
-            updateNodeColors();
+            if (lensData && lensData.description) {
+                // Блок "Что это?"
+                const whatBlock = document.createElement('div');
+                whatBlock.className = 'content-block';
+                whatBlock.innerHTML = `
+                    <h4>Что это?</h4>
+                    <ul>
+                        ${lensData.description.what.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                `;
+                panelContent.appendChild(whatBlock);
+                
+                // Блок "Что получаем?"
+                const resultBlock = document.createElement('div');
+                resultBlock.className = 'content-block';
+                resultBlock.innerHTML = `
+                    <h4>Что получаем?</h4>
+                    <ul>
+                        ${lensData.description.result.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                `;
+                panelContent.appendChild(resultBlock);
+            }
+            
+            // Показываем панель
+            document.getElementById('info-panel').classList.add('active');
         }
-        
-        // Функция получения названия линзы
+
+        // Получение названия линзы
         function getLensName(lensKey) {
             const names = {
-                'parent': 'Линза Родителя',
-                'child': 'Линза Ребёнка',
-                'inspiration': 'Линза Вдохновения',
-                'engineer': 'Линза Инженера'
+                'participants': 'Для участников',
+                'parents': 'Для родителей',
+                'inspiration': 'Для вдохновения',
+                'start': 'Для начала'
             };
             return names[lensKey] || lensKey;
         }
-        
-        // Функция обновления цвета узлов
-        function updateNodeColors() {
-            const colorMap = {
-                'parent': '#FF9800',
-                'child': '#4CAF50',
-                'inspiration': '#9C27B0',
-                'engineer': '#2196F3'
-            };
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация летающих слов
+            initFloatingWords();
             
-            nodes.forEach(node => {
-                const nodeId = node.getAttribute('data-node');
-                const isActive = nodeId === currentNode;
-                
-                if (isActive) {
-                    node.style.borderColor = colorMap[currentLens];
-                    node.style.boxShadow = `0 0 20px ${colorMap[currentLens]}80`;
-                } else {
-                    node.style.borderColor = 'transparent';
-                    node.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.2)';
-                }
+            // Делаем первый узел активным
+            document.getElementById('node-idea').classList.add('active');
+            
+            // Обработчики для переключателей линз
+            document.querySelectorAll('.lens-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Убираем активный класс у всех кнопок
+                    document.querySelectorAll('.lens-btn').forEach(btn => btn.classList.remove('active'));
+                    
+                    // Добавляем активный класс текущей кнопке
+                    this.classList.add('active');
+                    
+                    // Определяем, какая линза выбрана
+                    if (this.id === 'participants-lens') currentLens = 'participants';
+                    else if (this.id === 'parents-lens') currentLens = 'parents';
+                    else if (this.id === 'inspiration-lens') currentLens = 'inspiration';
+                    else if (this.id === 'start-lens') currentLens = 'start';
+                    
+                    // Обновляем летающие слова
+                    updateFloatingWords();
+                    
+                    // Обновляем панель информации, если она открыта
+                    if (document.getElementById('info-panel').classList.contains('active')) {
+                        updateInfoPanel();
+                    }
+                });
             });
-        }
-        
-        // Обработчики для линз
-        lensButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                // Убираем активный класс у всех кнопок
-                lensButtons.forEach(btn => btn.classList.remove('active'));
-                
-                // Добавляем активный класс текущей кнопке
-                this.classList.add('active');
-                
-                // Определяем, какая линза выбрана
-                if (this.id === 'parent-lens') currentLens = 'parent';
-                else if (this.id === 'child-lens') currentLens = 'child';
-                else if (this.id === 'inspiration-lens') currentLens = 'inspiration';
-                else if (this.id === 'engineer-lens') currentLens = 'engineer';
-                else if (this.id === 'mix-lens') {
-                    // В режиме "смешать" показываем все перспективы
-                    currentLens = 'parent'; // По умолчанию
-                    // Можно сделать более сложную логику для смешанного режима
-                }
-                
-                // Обновляем контент
-                updateContentPanel();
+            
+            // Обработчики для узлов пути
+            document.querySelectorAll('.path-node').forEach(node => {
+                node.addEventListener('click', function() {
+                    // Убираем активный класс у всех узлов
+                    document.querySelectorAll('.path-node').forEach(n => n.classList.remove('active'));
+                    
+                    // Добавляем активный класс текущему узлу
+                    this.classList.add('active');
+                    
+                    // Обновляем текущий узел
+                    currentNode = this.getAttribute('data-node');
+                    
+                    // Обновляем панель информации
+                    updateInfoPanel();
+                });
             });
+            
+            // Обработчик для кнопки закрытия панели
+            document.getElementById('close-panel').addEventListener('click', function() {
+                document.getElementById('info-panel').classList.remove('active');
+            });
+            
+            // Показываем панель информации для первого узла
+            setTimeout(() => {
+                updateInfoPanel();
+            }, 1000);
         });
-        
-        // Обработчики для узлов дерева
-        nodes.forEach(node => {
-            node.addEventListener('click', function() {
-                // Убираем активный класс у всех узлов
-                nodes.forEach(n => n.classList.remove('active'));
-                
-                // Добавляем активный класс текущему узлу
-                this.classList.add('active');
-                
-                // Обновляем текущий узел
-                currentNode = this.getAttribute('data-node');
-                
-                // Обновляем контент
-                updateContentPanel();
-            });
-        });
-        
-        // Рисуем соединения между узлами (упрощённо)
-        function drawConnections() {
-            const connections = [
-                {from: 'node1', to: 'node2'},
-                {from: 'node1', to: 'node3'},
-                {from: 'node2', to: 'node4'},
-                {from: 'node2', to: 'node5'},
-                {from: 'node3', to: 'node6'},
-                {from: 'node4', to: 'node7'},
-                {from: 'node5', to: 'node7'},
-                {from: 'node6', to: 'node7'}
-            ];
-            
-            connections.forEach((conn, index) => {
-                const fromNode = document.getElementById(conn.from);
-                const toNode = document.getElementById(conn.to);
-                
-                if (fromNode && toNode) {
-                    const fromRect = fromNode.getBoundingClientRect();
-                    const toRect = toNode.getBoundingClientRect();
-                    const treeRect = document.getElementById('tree').getBoundingClientRect();
-                    
-                    const x1 = fromRect.left - treeRect.left + fromRect.width / 2;
-                    const y1 = fromRect.top - treeRect.top + fromRect.height / 2;
-                    const x2 = toRect.left - treeRect.left + toRect.width / 2;
-                    const y2 = toRect.top - treeRect.top + toRect.height / 2;
-                    
-                    const length = Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
-                    const angle = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI;
-                    
-                    const connection = document.createElement('div');
-                    connection.className = 'connection';
-                    connection.style.width = length + 'px';
-                    connection.style.height = '3px';
-                    connection.style.left = x1 + 'px';
-                    connection.style.top = y1 + 'px';
-                    connection.style.transform = `rotate(${angle}deg)`;
-                    connection.style.transformOrigin = '0 0';
-                    connection.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                    
-                    document.getElementById('tree').appendChild(connection);
-                }
-            });
-        }
-        
-        // Инициализация
-        window.addEventListener('load', function() {
-            // Делаем узел "Идея" активным по умолчанию
-            document.querySelector('.node[data-node="idea"]').classList.add('active');
-            
-            // Инициализируем контент
-            updateContentPanel();
-            
-            // Рисуем соединения
-            drawConnections();
-        });
-        
-        // Анимация узлов при загрузке
-        setTimeout(() => {
-            nodes.forEach((node, index) => {
-                setTimeout(() => {
-                    node.style.opacity = '0';
-                    node.style.transform += ' scale(0.8)';
-                    node.offsetHeight; // Trigger reflow
-                    node.style.transition = 'all 0.5s ease';
-                    node.style.opacity = '1';
-                    node.style.transform = node.style.transform.replace('scale(0.8)', 'scale(1)');
-                }, index * 100);
-            });
-        }, 500);
     </script>
 </body>
 </html>
