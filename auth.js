@@ -14,6 +14,15 @@ import {
   setDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+// ✅ Админы по email (твой Gmail)
+export const ADMIN_EMAILS = [
+  "rastadmi@gmail.com"
+];
+
+export function isAdminUser(user){
+  const email = (user?.email || "").toLowerCase();
+  return ADMIN_EMAILS.map(e=>e.toLowerCase()).includes(email);
+}
 
 function injectStyles() {
   if (document.getElementById("authStyles")) return;
@@ -233,9 +242,13 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     await upsertUser(user);
     setLoggedIn(user);
-    if (location.hash === "#/login") location.hash = "#/notebook";
+    if (location.hash === "#/login") location.hash = "#/notebook"; 
+    window.APP_IS_ADMIN = isAdminUser(user);
+
   } else {
     setLoggedOut();
+    window.APP_IS_ADMIN = false;
+
   }
 });
 
