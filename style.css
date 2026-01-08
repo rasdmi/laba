@@ -267,6 +267,7 @@ body{
 
 /* Panel */
 .panel{
+  transition: transform .22s ease, opacity .22s ease;
   position:fixed;
   top: 86px;
   right: 14px;
@@ -304,7 +305,7 @@ body{
   opacity:.7;
 }
 .panel__body{ padding: 12px 14px 14px; }
-.panel__desc{ margin:0 0 12px 0; color: rgba(23,23,23,.75); font-size:13px; line-height:1.4; }
+.panel__desc{ margin:0 0 12px 0; color: rgba(23,23,23,.75); font-size: clamp(14px, .35vw + 12px, 16px); line-height:1.4; }
 
 .panel__listWrap{
   margin-top:10px;
@@ -392,3 +393,13 @@ body{
   font-size: 15px;
   line-height: 1.45;
 }
+
+#panelPin{ display:none !important; }
+
+.panel.is-hidden{
+  transform: translateX(420px);
+  opacity: 0;
+  pointer-events:none;
+}
+
+.overlay-open .lenses{ display:none !important; }

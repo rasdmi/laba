@@ -1,5 +1,5 @@
 // character.js
-import { auth, db } from "./firebase-config.js";
+import { auth, db, storage } from "./firebase-config.js";
 import { requireAuth } from "./auth.js";
 
 import {
@@ -14,6 +14,13 @@ import {
   updateDoc,
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+import {
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
 function escapeHtml(s) {
   return (s || "").replace(/[&<>"']/g, (m) => ({
@@ -92,6 +99,28 @@ function ensureUI() {
         <div id="pageBody" style="max-width:900px;">
           <div style="opacity:.6;">Выберите страницу слева</div>
         </div>
+
+        <section id="gallerySection" style="margin-top:14px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div style="font-family:\'Vasek\',ui-sans-serif; font-size:16px; opacity:.85;">Галерея</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <input id="galleryFile" type="file" accept="image/*" style="display:none" />
+              <button class="btn ghost" id="galleryAdd" type="button">+ картинка</button>
+            </div>
+          </div>
+          <div id="galleryBoard" style="
+            margin-top:10px;
+            height: 260px;
+            border-radius: 20px;
+            border: 1px dashed rgba(23,23,23,.16);
+            background: rgba(255,255,255,.62);
+            position: relative;
+            overflow: hidden;
+          "></div>
+          <div style="opacity:.6; font-size:12px; margin-top:6px; line-height:1.35;">
+            Перетаскивай картинки мышкой/пальцем. Нажми ✕ чтобы удалить.
+          </div>
+        </section>
       </main>
     </div>
 
@@ -170,6 +199,152 @@ function canEditPage(routeMode, pageOrigin) {
   return pageOrigin !== "admin";
 }
 
+
+let unsubGallery = null;
+
+function randPos(max){
+  return Math.max(12, Math.floor(Math.random() * Math.max(12, max-120)));
+}
+
+function mountGallery(uid, charId){
+  const board = document.getElementById("galleryBoard");
+  const addBtn = document.getElementById("galleryAdd");
+  const fileInput = document.getElementById("galleryFile");
+  if (!board || !addBtn || !fileInput) return;
+
+  // responsive board height
+  if (window.matchMedia && window.matchMedia("(max-width: 980px)").matches){
+    board.style.height = "200px";
+  }
+
+  addBtn.onclick = () => fileInput.click();
+
+  fileInput.onchange = async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    fileInput.value = "";
+
+    const id = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()));
+    const path = `users/${uid}/characters/${charId}/gallery/${id}_${file.name}`;
+    const sref = storageRef(storage, path);
+
+    try{
+      await uploadBytes(sref, file, { contentType: file.type || "image/*" });
+      const url = await getDownloadURL(sref);
+
+      // store initial position
+      const rect = board.getBoundingClientRect();
+      const x = randPos(rect.width);
+      const y = randPos(rect.height);
+
+      await addDoc(collection(db,"users",uid,"characters",charId,"gallery"), {
+        url,
+        storagePath: path,
+        name: file.name,
+        x, y,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }catch(e){
+      console.error("[gallery] upload error", e);
+      alert("Не удалось загрузить картинку. Проверь Storage rules/доступ.");
+    }
+  };
+
+  if (unsubGallery) unsubGallery();
+  const q = query(collection(db,"users",uid,"characters",charId,"gallery"), orderBy("createdAt","asc"));
+  unsubGallery = onSnapshot(q, (snap) => {
+    board.innerHTML = "";
+    if (snap.empty){
+      board.innerHTML = `<div style="opacity:.55; font-size:12px; padding:14px;">Пока пусто. Нажми “+ картинка”.</div>`;
+      return;
+    }
+
+    snap.forEach((d) => {
+      const it = d.data();
+      const wrap = document.createElement("div");
+      wrap.style.cssText = `
+        position:absolute;
+        left:${Math.max(0, it.x||0)}px;
+        top:${Math.max(0, it.y||0)}px;
+        width:120px; height:88px;
+        border-radius:16px;
+        border:1px solid rgba(23,23,23,.12);
+        background: rgba(255,255,255,.86);
+        box-shadow: 0 10px 26px rgba(0,0,0,.10);
+        overflow:hidden;
+        touch-action:none;
+        user-select:none;
+      `;
+
+      wrap.innerHTML = `
+        <img src="${it.url}" alt="" style="width:100%; height:100%; object-fit:cover; display:block;">
+        <button title="Удалить" style="
+          position:absolute; top:6px; right:6px;
+          width:24px; height:24px; border-radius:999px;
+          border:1px solid rgba(23,23,23,.16);
+          background: rgba(255,255,255,.88);
+          cursor:pointer;
+        ">✕</button>
+      `;
+
+      // delete
+      wrap.querySelector("button").onclick = async (ev) => {
+        ev.stopPropagation();
+        if (!confirm("Удалить картинку?")) return;
+        try{
+          await deleteDoc(doc(db,"users",uid,"characters",charId,"gallery", d.id));
+        }catch(e){
+          console.error(e);
+        }
+        // try delete from storage (optional)
+        if (it.storagePath){
+          try{ await deleteObject(storageRef(storage, it.storagePath)); }catch(e){}
+        }
+      };
+
+      // drag
+      let startX=0, startY=0, baseX=it.x||0, baseY=it.y||0, dragging=false;
+
+      const onDown = (e) => {
+        dragging = true;
+        wrap.setPointerCapture?.(e.pointerId);
+        startX = e.clientX;
+        startY = e.clientY;
+        baseX = it.x||0;
+        baseY = it.y||0;
+      };
+      const onMove = (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const nx = Math.max(0, baseX + dx);
+        const ny = Math.max(0, baseY + dy);
+        wrap.style.left = nx + "px";
+        wrap.style.top = ny + "px";
+      };
+      const onUp = async (e) => {
+        if (!dragging) return;
+        dragging = false;
+        const nx = parseFloat(wrap.style.left) || 0;
+        const ny = parseFloat(wrap.style.top) || 0;
+        try{
+          await updateDoc(doc(db,"users",uid,"characters",charId,"gallery", d.id), {
+            x: nx, y: ny, updatedAt: serverTimestamp()
+          });
+        }catch(err){ console.error(err); }
+      };
+
+      wrap.addEventListener("pointerdown", onDown);
+      wrap.addEventListener("pointermove", onMove);
+      wrap.addEventListener("pointerup", onUp);
+      wrap.addEventListener("pointercancel", onUp);
+
+      board.appendChild(wrap);
+    });
+  });
+}
+
 async function openCharacter() {
   if (!requireAuth()) return;
 
@@ -180,6 +355,7 @@ async function openCharacter() {
 
   const wrap = ensureUI();
   wrap.style.display = "block";
+  document.body.classList.add("overlay-open");
 
   // контекст для drawing.js (чтобы рисунки понимали, какой персонаж активен)
   window.__CHAR_CTX__ = { uid, charId, mode, active: { id: charId } };
@@ -224,7 +400,11 @@ async function openCharacter() {
     });
   };
 
+  mountGallery(uid, charId);
+
   if (unsubPages) unsubPages();
+  if (unsubGallery) unsubGallery();
+  unsubGallery = null;
   unsubPages = onSnapshot(
     query(
       collection(db, "users", uid, "characters", charId, "pages"),
@@ -344,7 +524,12 @@ async function openCharacter() {
 function closeCharacter() {
   const el = document.getElementById("charOverlay");
   if (el) el.style.display = "none";
+  document.body.classList.remove("overlay-open");
+  mountGallery(uid, charId);
+
   if (unsubPages) unsubPages();
+  if (unsubGallery) unsubGallery();
+  unsubGallery = null;
   unsubPages = null;
   activePageId = null;
 }

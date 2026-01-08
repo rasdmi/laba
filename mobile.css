@@ -62,7 +62,7 @@
   }
   .panel.is-hidden{ transform: translateY(calc(100% + 20px)); }
 
-  .panel__scroll{ max-height: min(52vh, 520px); }
+  .panel__scroll{ max-height: min(44vh, 420px); }
 
   /* Notebook overlay should cover full screen on mobile */
   .nbWrap{ inset: 132px 0 0 0 !important; padding: 10px !important; }

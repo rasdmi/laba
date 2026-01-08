@@ -212,6 +212,7 @@
 
     setActiveCard(id);
     fillPanel(node);
+    panel.classList.remove("is-hidden");
 
     if (scrollIntoView){
       // center node in viewport (horizontal)
@@ -241,8 +242,8 @@
   });
 
   // interactions
-  btnReset.addEventListener("click", () => focusNode(DATA.nodes[0].id, true));
-  panelClose.addEventListener("click", () => { if (!pinned) activeNodeId=null; setActiveCard(""); });
+  btnReset.addEventListener("click", () => { location.hash = "#/"; focusNode(DATA.nodes[0].id, true); });
+  panelClose.addEventListener("click", () => { activeNodeId = null; setActiveCard(""); panel.classList.add("is-hidden"); });
   panelNext.addEventListener("click", () => {
     const nid = nextNodeId();
     if (nid) focusNode(nid, true);
@@ -275,7 +276,12 @@
     }
   }, { passive:false });
 
-  // initial render
+    // mobile: start with panel collapsed
+  if (window.matchMedia && window.matchMedia("(max-width: 980px)").matches){
+    panel.classList.add("is-hidden");
+  }
+
+// initial render
   renderNodes();
   renderPaths();
   window.addEventListener("resize", () => renderPaths());

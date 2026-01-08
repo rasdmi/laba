@@ -164,6 +164,7 @@ function openNotebook(){
   if (!requireAuth()) return;
   ensureStyles();
   ensureShell().classList.add("is-open");
+  document.body.classList.add("overlay-open");
   updateUserPill();
   toggleMain(false);
   if (!unsubChars) unsubChars = mountCharacters();
@@ -172,6 +173,7 @@ function openNotebook(){
 function closeNotebook(){
   document.getElementById("nbWrap")?.classList.remove("is-open");
   toggleMain(true);
+  document.body.classList.remove("overlay-open");
 }
 
 function route(){
