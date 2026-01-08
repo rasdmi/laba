@@ -1,9 +1,9 @@
-// character.js — tabs + parameters + inventory + gallery + master assets + game
+// character.js — Tabs + assets renderer + Notion tab (no Firebase Storage)
 import { auth, db } from "./firebase-config.js";
 import { requireAuth } from "./auth.js";
 
 import {
-  doc, getDoc, setDoc, updateDoc,
+  doc, getDoc, updateDoc,
   collection, addDoc, deleteDoc,
   query, orderBy, onSnapshot,
   serverTimestamp, getDocs
@@ -16,31 +16,148 @@ function escapeHtml(s){
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[m]));
 }
-
 function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 
 function parseRoute(){
   const h = location.hash || "";
-
-  // user mode: #/character/CHARID
   if (h.startsWith("#/character/")){
     return { mode:"user", uid: auth.currentUser?.uid, charId: h.split("/")[2] };
   }
-
-  // admin mode: #/admin/character/UID/CHARID
   if (h.startsWith("#/admin/character/")){
     const p = h.split("/");
     return { mode:"admin", uid: p[3], charId: p[4] };
   }
-
   return null;
 }
-
 function mustBeAdminIfAdminRoute(route){
   if (route?.mode !== "admin") return true;
   if (window.APP_IS_ADMIN) return true;
   location.hash = "#/notebook";
   return false;
+}
+
+function charDocRef(uid, charId){
+  return doc(db, "users", uid, "characters", charId);
+}
+
+/* ================= URL embed helpers ================= */
+
+function isImageUrl(url){
+  return /\.(png|jpg|jpeg|webp|gif|avif)(\?.*)?$/i.test(url||"");
+}
+function isVideoFileUrl(url){
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url||"");
+}
+function youtubeId(url){
+  if (!url) return null;
+  try{
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")){
+      return u.pathname.replace("/","") || null;
+    }
+    if (u.hostname.includes("youtube.com")){
+      return u.searchParams.get("v") || null;
+    }
+    return null;
+  }catch{ return null; }
+}
+function vimeoId(url){
+  if (!url) return null;
+  try{
+    const u = new URL(url);
+    if (!u.hostname.includes("vimeo.com")) return null;
+    // vimeo.com/123456789
+    const m = u.pathname.match(/\/(\d+)/);
+    return m ? m[1] : null;
+  }catch{ return null; }
+}
+function notionPublicEmbedUrl(url){
+  // Notion public share can be embedded by adding ?embed=1 (usually works)
+  if (!url) return null;
+  try{
+    const u = new URL(url);
+    // accept notion.site, notion.so and custom share
+    // just add embed=1 param
+    u.searchParams.set("embed","1");
+    return u.toString();
+  }catch{
+    return null;
+  }
+}
+function guessAssetKind(url, forcedType=null){
+  // forcedType may be image/video/embed/model/link
+  if (forcedType && forcedType !== "auto") return forcedType;
+
+  if (!url) return "link";
+  const yid = youtubeId(url);
+  if (yid) return "youtube";
+  const vid = vimeoId(url);
+  if (vid) return "vimeo";
+  if ((url||"").includes("notion.") || (url||"").includes("notion.site") || (url||"").includes("notion.so")){
+    return "notion";
+  }
+  if (isImageUrl(url)) return "image";
+  if (isVideoFileUrl(url)) return "video";
+  return "embed"; // default: iframe
+}
+
+function renderAssetPreview(asset){
+  const url = asset.url || "";
+  const kind = guessAssetKind(url, asset.type);
+
+  if (kind === "image"){
+    return `<img class="aMediaImg" src="${escapeHtml(url)}" alt="">`;
+  }
+
+  if (kind === "video"){
+    return `
+      <video class="aMediaVid" src="${escapeHtml(url)}" controls playsinline></video>
+    `;
+  }
+
+  if (kind === "youtube"){
+    const id = youtubeId(url);
+    return `
+      <div class="aFrame">
+        <iframe
+          src="https://www.youtube.com/embed/${escapeHtml(id)}"
+          title="YouTube"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+        ></iframe>
+      </div>
+    `;
+  }
+
+  if (kind === "vimeo"){
+    const id = vimeoId(url);
+    return `
+      <div class="aFrame">
+        <iframe
+          src="https://player.vimeo.com/video/${escapeHtml(id)}"
+          title="Vimeo"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </div>
+    `;
+  }
+
+  if (kind === "notion"){
+    const e = notionPublicEmbedUrl(url) || url;
+    return `
+      <div class="aFrame aFrame--tall">
+        <iframe src="${escapeHtml(e)}" title="Notion embed"></iframe>
+      </div>
+    `;
+  }
+
+  // generic embed
+  return `
+    <div class="aFrame">
+      <iframe src="${escapeHtml(url)}" title="Embed"></iframe>
+    </div>
+  `;
 }
 
 /* ================= UI ================= */
@@ -76,6 +193,7 @@ function ensureUI(){
         <button class="chTab" data-tab="inventory">инвентарь</button>
         <button class="chTab" data-tab="gallery">галерея</button>
         <button class="chTab" data-tab="master">от мастера</button>
+        <button class="chTab" data-tab="notion">notion</button>
         <button class="chTab" data-tab="game">в игру</button>
       </div>
 
@@ -86,7 +204,7 @@ function ensureUI(){
     </div>
 
     <div class="chBody">
-      <!-- NOTEBOOK view -->
+      <!-- NOTEBOOK -->
       <div class="chView is-active" data-view="notebook">
         <div class="nbGrid">
           <aside class="nbSide">
@@ -135,7 +253,7 @@ function ensureUI(){
                   </div>
                 </div>
               </div>
-              <div class="muted" style="margin-top:10px;">*Пользователь видит, но не меняет (в MVP).</div>
+              <div class="muted" style="margin-top:10px;">*Пользователь видит, но не меняет (MVP).</div>
             </div>
           </div>
 
@@ -171,7 +289,7 @@ function ensureUI(){
         <div class="pane">
           <div class="paneCard">
             <div class="paneH">Инвентарь</div>
-            <div class="muted">Добавляйте предметы. (Потом сделаем “слоты/редкости/вес”.)</div>
+            <div class="muted">Добавляйте предметы.</div>
 
             <div class="invRow">
               <input class="field" id="invName" placeholder="предмет (например: меч Арагорна)" />
@@ -183,15 +301,15 @@ function ensureUI(){
         </div>
       </div>
 
-      <!-- GALLERY -->
+      <!-- GALLERY (URLs + draggable cards) -->
       <div class="chView" data-view="gallery">
         <div class="pane">
           <div class="paneCard">
             <div class="paneH">Галерея (свободные карточки)</div>
-            <div class="muted">MVP: добавляем картинку по URL, можно двигать и удалять.</div>
+            <div class="muted">MVP: добавляем URL, можно двигать и удалять. Поддержка: картинки и видео(YouTube/Vimeo/iframe).</div>
 
             <div class="galRow">
-              <input class="field" id="gUrl" placeholder="URL картинки" />
+              <input class="field" id="gUrl" placeholder="URL (картинка / YouTube / Vimeo / Notion / embed)" />
               <button class="btn" id="gAdd">+ добавить</button>
             </div>
           </div>
@@ -202,26 +320,56 @@ function ensureUI(){
         </div>
       </div>
 
-      <!-- MASTER -->
+      <!-- MASTER assets (admin adds) -->
       <div class="chView" data-view="master">
         <div class="pane">
           <div class="paneCard">
             <div class="paneH">Материалы от мастера</div>
-            <div class="muted">Админ добавляет ссылки на изображения/видео/3D, пользователь смотрит.</div>
+            <div class="muted">Админ добавляет карточки (image/video/embed/notion/youtube).</div>
 
             <div class="assetRow">
-              <input class="field" id="aTitle" placeholder="название (например: 'рендер персонажа')" />
+              <input class="field" id="aTitle" placeholder="название" />
               <select class="field" id="aType">
+                <option value="auto">auto</option>
                 <option value="image">image</option>
                 <option value="video">video</option>
-                <option value="model">3d</option>
-                <option value="link">link</option>
+                <option value="embed">embed</option>
+                <option value="notion">notion</option>
               </select>
               <input class="field" id="aUrl" placeholder="URL" />
               <button class="btn" id="aAdd">добавить</button>
             </div>
 
             <div id="assetList" class="assetList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTION tab -->
+      <div class="chView" data-view="notion">
+        <div class="pane">
+          <div class="paneCard">
+            <div class="paneH">Notion-страница персонажа</div>
+            <div class="muted">
+              Сделай в Notion “Share to web”, вставь ссылку сюда — и она будет видна прямо в персонаже.
+            </div>
+
+            <div class="notRow">
+              <input class="field" id="nUrl" placeholder="Notion public URL" />
+              <button class="btn" id="nSave">сохранить</button>
+              <button class="btn ghost" id="nOpen">открыть</button>
+              <button class="btn ghost" id="nClear">очистить</button>
+            </div>
+
+            <div class="muted" style="margin-top:8px; font-size:12px;">
+              Если Notion не отображается в iframe — проверь, что страница “Publish to web” включена.
+            </div>
+          </div>
+
+          <div class="paneCard">
+            <div id="notionFrameWrap" class="notionFrameWrap">
+              <div class="muted">Вставь ссылку на Notion — здесь появится встроенная страница.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -247,7 +395,7 @@ function ensureUI(){
             </div>
 
             <div class="muted" style="margin-top:12px;">
-              Дальше добавим: NPC/задания/награды/интеракции, и “мир” как соцсеть.
+              Дальше добавим NPC/квесты/награды/интеракции.
             </div>
           </div>
         </div>
@@ -279,10 +427,7 @@ function ensureUI(){
         font-size: 14px;
         opacity:.85;
       }
-      .chTab.is-active{
-        background: rgba(23,23,23,.06);
-        opacity:1;
-      }
+      .chTab.is-active{ background: rgba(23,23,23,.06); opacity:1; }
       .chActions{ display:flex; gap:10px; margin-left:auto; }
 
       .chBody{
@@ -375,7 +520,7 @@ function ensureUI(){
       .invItem b{ font-family:'Vasek',ui-sans-serif; font-weight:400; }
 
       .galRow{ display:flex; gap:10px; flex-wrap:wrap; }
-      .galRow .field{ flex: 1 1 300px; }
+      .galRow .field{ flex: 1 1 320px; }
 
       .galStage{
         position:relative;
@@ -387,24 +532,22 @@ function ensureUI(){
       }
       .galCard{
         position:absolute;
-        width: 180px;
-        border-radius: 16px;
+        width: 240px;
+        border-radius: 18px;
         border:1px solid rgba(23,23,23,.12);
         background: rgba(255,255,255,.78);
         box-shadow: 0 10px 26px rgba(0,0,0,.10);
         cursor: grab;
         user-select:none;
+        overflow:hidden;
       }
       .galCard:active{ cursor: grabbing; }
-      .galCard img{
-        width:100%; height:120px; object-fit:cover;
-        border-radius: 16px 16px 0 0;
-        display:block;
-      }
       .galCardBar{
         display:flex; gap:8px; justify-content:space-between; align-items:center;
         padding: 8px 10px;
         font-size: 12px; opacity:.75;
+        border-top:1px solid rgba(23,23,23,.08);
+        background: rgba(255,255,255,.65);
       }
       .xBtn{
         border:1px solid rgba(23,23,23,.14);
@@ -415,22 +558,93 @@ function ensureUI(){
         font-family:'Vasek',ui-sans-serif;
       }
 
+      /* media inside cards */
+      .gMedia{
+        width:100%;
+        height: 150px;
+        display:block;
+        background: rgba(0,0,0,.03);
+      }
+      .gMedia img{ width:100%; height:150px; object-fit:cover; display:block; }
+      .gMedia video{ width:100%; height:150px; object-fit:cover; display:block; }
+      .gMedia iframe{
+        width:100%; height:150px; border:0; display:block;
+        background: rgba(0,0,0,.03);
+      }
+
       .assetRow{
         display:grid;
         grid-template-columns: 1fr 130px 1fr auto;
         gap:10px;
         margin-top:10px;
       }
-      .assetList{ margin-top:12px; display:grid; gap:10px; }
-      .assetItem{
-        display:flex; align-items:center; justify-content:space-between; gap:10px;
-        padding:10px 12px;
+      .assetList{
+        margin-top:12px;
+        display:grid;
+        gap:12px;
+      }
+      .assetCard{
+        padding:12px;
+        border-radius:18px;
+        border:1px solid rgba(23,23,23,.10);
+        background: rgba(255,255,255,.72);
+      }
+      .assetTop{
+        display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;
+      }
+      .assetTop b{ font-family:'Vasek',ui-sans-serif; font-weight:400; font-size:16px; }
+      .assetMeta{ opacity:.6; font-size:12px; margin-top:4px; }
+      .assetActions{ display:flex; gap:8px; flex-wrap:wrap; }
+      .aFrame{
+        margin-top:10px;
+        border-radius:16px;
+        overflow:hidden;
+        border:1px solid rgba(23,23,23,.10);
+        background: rgba(255,255,255,.65);
+      }
+      .aFrame iframe{
+        width:100%;
+        height: 360px;
+        border:0;
+        display:block;
+        background: rgba(0,0,0,.02);
+      }
+      .aFrame--tall iframe{ height: 520px; }
+      .aMediaImg{
+        width:100%;
+        display:block;
         border-radius:16px;
         border:1px solid rgba(23,23,23,.10);
-        background: rgba(255,255,255,.70);
+        margin-top:10px;
       }
-      .assetItem b{ font-family:'Vasek',ui-sans-serif; font-weight:400; }
-      .assetItem a{ word-break: break-all; opacity:.85; }
+      .aMediaVid{
+        width:100%;
+        display:block;
+        border-radius:16px;
+        border:1px solid rgba(23,23,23,.10);
+        margin-top:10px;
+        background: rgba(0,0,0,.03);
+      }
+
+      .notRow{
+        display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;
+      }
+      .notRow .field{ flex:1 1 320px; }
+      .notionFrameWrap{
+        border-radius: 18px;
+        border:1px dashed rgba(23,23,23,.16);
+        background: rgba(255,255,255,.55);
+        min-height: 520px;
+        overflow:hidden;
+        display:grid;
+        place-items:center;
+      }
+      .notionFrameWrap iframe{
+        width:100%;
+        height: 520px;
+        border:0;
+        display:block;
+      }
 
       .gameBox{
         display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;
@@ -451,6 +665,10 @@ function ensureUI(){
         .paneRow{ grid-template-columns: 1fr; }
         .assetRow{ grid-template-columns: 1fr; }
         .galStage{ min-height: 420px; }
+        .aFrame iframe{ height: 260px; }
+        .aFrame--tall iframe{ height: 420px; }
+        .notionFrameWrap{ min-height: 420px; }
+        .notionFrameWrap iframe{ height: 420px; }
       }
     </style>
   `;
@@ -458,11 +676,7 @@ function ensureUI(){
   document.body.appendChild(el);
 
   el.querySelector("#chClose").onclick = () => (location.hash = "#/notebook");
-
-  // tabs
-  el.querySelectorAll(".chTab").forEach(btn=>{
-    btn.onclick = () => setActiveTab(btn.dataset.tab);
-  });
+  el.querySelectorAll(".chTab").forEach(btn => btn.onclick = () => setActiveTab(btn.dataset.tab));
 
   return el;
 }
@@ -473,33 +687,25 @@ function setActiveTab(tab){
   el.querySelectorAll(".chView").forEach(v => v.classList.toggle("is-active", v.dataset.view === tab));
 }
 
-/* ================= Data paths ================= */
-
-function charDocRef(uid, charId){
-  return doc(db, "users", uid, "characters", charId);
-}
-
-/* ================= Notebook pages (тетрадка) ================= */
+/* ================= Notebook pages ================= */
 
 let unsubPages = null;
 let activePageId = null;
 
 function canEditPage(routeMode, origin){
   if (routeMode === "admin") return true;
-  return origin !== "admin"; // user can't edit admin pages
+  return origin !== "admin";
 }
 
 function mountPages(route){
   const el = ensureUI();
   const { uid, charId, mode } = route;
-
   const listEl = el.querySelector("#pgList");
   const bodyEl = el.querySelector("#pgBody");
 
   el.querySelector("#pgAdd").onclick = async () => {
     const title = prompt("Название страницы");
     if (!title) return;
-
     await addDoc(collection(db, "users", uid, "characters", charId, "pages"), {
       title,
       body: "",
@@ -512,7 +718,7 @@ function mountPages(route){
   if (unsubPages) unsubPages();
   unsubPages = onSnapshot(
     query(collection(db, "users", uid, "characters", charId, "pages"), orderBy("createdAt","asc")),
-    (snap) => {
+    (snap)=>{
       listEl.innerHTML = "";
 
       if (snap.empty){
@@ -527,7 +733,7 @@ function mountPages(route){
         const item = document.createElement("div");
         item.className = "pgItem" + (d.id === activePageId ? " is-active" : "");
         item.innerHTML = `
-          <div class="pgTitle">${escapeHtml(p.title || "")}</div>
+          <div class="pgTitle">${escapeHtml(p.title||"")}</div>
           <div class="pgMeta">${p.origin === "admin" ? "от мастера" : "моя"} • ${escapeHtml(p.origin||"")}</div>
         `;
 
@@ -604,7 +810,7 @@ function mountPages(route){
   );
 }
 
-/* ================= Parameters + Stats ================= */
+/* ================= Params + Stats + Avatar ================= */
 
 function mountParams(route, charData){
   const el = ensureUI();
@@ -618,7 +824,6 @@ function mountParams(route, charData){
   const btnSet = el.querySelector("#pAvaSet");
   const btnClear = el.querySelector("#pAvaClear");
 
-  // stats
   const sPower = el.querySelector("#sPower");
   const sAgility = el.querySelector("#sAgility");
   const sMagic = el.querySelector("#sMagic");
@@ -636,7 +841,6 @@ function mountParams(route, charData){
     avaUrl.value = "";
   }
 
-  // user can't change avatar (MVP)
   const canAdminEditAvatar = (mode === "admin");
   avaUrl.disabled = !canAdminEditAvatar;
   btnSet.disabled = !canAdminEditAvatar;
@@ -678,7 +882,6 @@ function mountParams(route, charData){
     avaUrl.value = "";
   };
 
-  // stats fill
   const stats = charData?.stats || {};
   sPower.value = stats.power ?? 20;
   sAgility.value = stats.agility ?? 20;
@@ -748,21 +951,26 @@ function mountInventory(route){
   });
 }
 
-/* ================= Gallery (URL + drag) ================= */
+/* ================= Gallery: draggable cards with embeds ================= */
 
 let unsubGallery = null;
 
-function enableDrag(card, onMove){
+function enableDrag(card, onMove, onCommit){
   let dragging = false;
-  let startX=0, startY=0, baseX=0, baseY=0;
+  let startX=0, startY=0;
+  let startLeft=0, startTop=0;
 
   const down = (e)=>{
+    // ignore clicks on buttons
+    if (e.target?.closest?.("button")) return;
+
     dragging = true;
     const pt = e.touches ? e.touches[0] : e;
     startX = pt.clientX; startY = pt.clientY;
-    const r = card.getBoundingClientRect();
-    baseX = r.left; baseY = r.top;
-    card.setPointerCapture?.(e.pointerId);
+    startLeft = parseInt(card.style.left||"0",10) || 0;
+    startTop = parseInt(card.style.top||"0",10) || 0;
+
+    try{ card.setPointerCapture?.(e.pointerId); }catch{}
     e.preventDefault?.();
   };
 
@@ -771,26 +979,52 @@ function enableDrag(card, onMove){
     const pt = e.touches ? e.touches[0] : e;
     const dx = pt.clientX - startX;
     const dy = pt.clientY - startY;
-    onMove(dx, dy);
+    onMove(startLeft + dx, startTop + dy);
   };
 
   const up = ()=>{
+    if (!dragging) return;
     dragging = false;
+    onCommit?.();
   };
 
   card.addEventListener("pointerdown", down);
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);
 
-  // touch fallback (Android)
+  // touch fallback
   card.addEventListener("touchstart", down, { passive:false });
   window.addEventListener("touchmove", move, { passive:false });
   window.addEventListener("touchend", up);
 }
 
+function renderGalleryMedia(url){
+  const kind = guessAssetKind(url, "auto");
+
+  if (kind === "image"){
+    return `<div class="gMedia"><img src="${escapeHtml(url)}" alt=""></div>`;
+  }
+  if (kind === "video"){
+    return `<div class="gMedia"><video src="${escapeHtml(url)}" muted controls playsinline></video></div>`;
+  }
+  if (kind === "youtube"){
+    const id = youtubeId(url);
+    return `<div class="gMedia"><iframe src="https://www.youtube.com/embed/${escapeHtml(id)}" allowfullscreen></iframe></div>`;
+  }
+  if (kind === "vimeo"){
+    const id = vimeoId(url);
+    return `<div class="gMedia"><iframe src="https://player.vimeo.com/video/${escapeHtml(id)}" allowfullscreen></iframe></div>`;
+  }
+  if (kind === "notion"){
+    const e = notionPublicEmbedUrl(url) || url;
+    return `<div class="gMedia"><iframe src="${escapeHtml(e)}"></iframe></div>`;
+  }
+  return `<div class="gMedia"><iframe src="${escapeHtml(url)}"></iframe></div>`;
+}
+
 function mountGallery(route){
   const el = ensureUI();
-  const { uid, charId } = route;
+  const { uid, charId, mode } = route;
 
   const stage = el.querySelector("#galStage");
   const urlInp = el.querySelector("#gUrl");
@@ -807,6 +1041,7 @@ function mountGallery(route){
       x: 24 + Math.floor(Math.random()*160),
       y: 24 + Math.floor(Math.random()*120),
       createdAt: serverTimestamp(),
+      origin: mode === "admin" ? "admin" : "user",
     });
     urlInp.value = "";
   };
@@ -821,54 +1056,47 @@ function mountGallery(route){
       card.className = "galCard";
       card.style.left = (g.x ?? 20) + "px";
       card.style.top  = (g.y ?? 20) + "px";
+
       card.innerHTML = `
-        <img src="${escapeHtml(g.url||"")}" alt="">
+        ${renderGalleryMedia(g.url||"")}
         <div class="galCardBar">
-          <span>ref</span>
+          <span>${escapeHtml(g.origin||"")}</span>
           <button class="xBtn" title="удалить">✕</button>
         </div>
       `;
 
-      // delete
-      card.querySelector("button").onclick = async (e) => {
+      // delete: user can delete own, admin can delete all
+      const canDelete = (mode === "admin") || (g.origin !== "admin");
+      const delBtn = card.querySelector("button");
+      delBtn.style.display = canDelete ? "" : "none";
+      delBtn.onclick = async (e) => {
         e.stopPropagation();
         await deleteDoc(doc(db, "users", uid, "characters", charId, "gallery", d.id));
       };
 
-      // drag
-      const stageRect = stage.getBoundingClientRect();
-      const startLeft = g.x ?? 20;
-      const startTop  = g.y ?? 20;
-
-      enableDrag(card, (dx, dy)=>{
-        // convert dx/dy to stage-local coords roughly
-        const nx = startLeft + dx;
-        const ny = startTop + dy;
-        card.style.left = nx + "px";
-        card.style.top = ny + "px";
-      });
-
-      // on pointerup -> persist new pos (cheap debounce)
-      let t = null;
-      const save = async () => {
-        clearTimeout(t);
-        t = setTimeout(async ()=>{
+      // drag + persist position (debounced)
+      let timer = null;
+      const commit = () => {
+        clearTimeout(timer);
+        timer = setTimeout(async ()=>{
           const x = parseInt(card.style.left||"0",10);
           const y = parseInt(card.style.top||"0",10);
-          await updateDoc(doc(db, "users", uid, "characters", charId, "gallery", d.id), {
-            x, y
-          });
-        }, 250);
+          await updateDoc(doc(db, "users", uid, "characters", charId, "gallery", d.id), { x, y });
+        }, 220);
       };
-      card.addEventListener("pointerup", save);
-      card.addEventListener("touchend", save);
+
+      enableDrag(
+        card,
+        (nx, ny)=>{ card.style.left = nx + "px"; card.style.top = ny + "px"; },
+        commit
+      );
 
       stage.appendChild(card);
     });
   });
 }
 
-/* ================= Master assets ================= */
+/* ================= Master assets: cards with previews ================= */
 
 let unsubAssets = null;
 
@@ -884,11 +1112,12 @@ function mountMaster(route){
 
   const col = collection(db, "users", uid, "characters", charId, "assets");
 
-  // only admin can add in MVP
-  aAdd.disabled = (mode !== "admin");
-  aTitle.disabled = (mode !== "admin");
-  aType.disabled = (mode !== "admin");
-  aUrl.disabled = (mode !== "admin");
+  // only admin can add/edit/delete master assets
+  const adminOnly = (mode === "admin");
+  aAdd.disabled = !adminOnly;
+  aTitle.disabled = !adminOnly;
+  aType.disabled = !adminOnly;
+  aUrl.disabled = !adminOnly;
 
   aAdd.onclick = async () => {
     const title = aTitle.value.trim();
@@ -897,7 +1126,9 @@ function mountMaster(route){
     if (!title || !url) return;
 
     await addDoc(col, {
-      title, url, type,
+      title,
+      url,
+      type,               // 'auto' or forced
       origin: "admin",
       createdAt: serverTimestamp(),
     });
@@ -909,31 +1140,92 @@ function mountMaster(route){
   if (unsubAssets) unsubAssets();
   unsubAssets = onSnapshot(query(col, orderBy("createdAt","desc")), (snap)=>{
     list.innerHTML = "";
+
     if (snap.empty){
       list.innerHTML = `<div class="muted" style="padding:8px 2px;">Пока нет материалов.</div>`;
       return;
     }
+
     snap.forEach(d=>{
       const a = d.data();
-      const row = document.createElement("div");
-      row.className = "assetItem";
-      row.innerHTML = `
-        <div>
-          <b>${escapeHtml(a.title||"")}</b>
-          <div class="muted" style="font-size:12px;">${escapeHtml(a.type||"")} • ${escapeHtml(a.origin||"")}</div>
-          <div style="margin-top:6px;"><a href="${escapeHtml(a.url||"")}" target="_blank" rel="noopener">открыть</a></div>
+      const card = document.createElement("div");
+      card.className = "assetCard";
+
+      card.innerHTML = `
+        <div class="assetTop">
+          <div>
+            <b>${escapeHtml(a.title||"")}</b>
+            <div class="assetMeta">${escapeHtml(a.origin||"")} • ${escapeHtml(a.type||"auto")}</div>
+          </div>
+          <div class="assetActions">
+            <a class="btn ghost" href="${escapeHtml(a.url||"")}" target="_blank" rel="noopener">открыть</a>
+            <button class="btn ghost" data-act="del">удалить</button>
+          </div>
         </div>
-        <button class="xBtn" title="удалить">✕</button>
+        ${renderAssetPreview(a)}
       `;
-      const del = row.querySelector("button");
-      del.style.display = (mode === "admin") ? "" : "none";
-      del.onclick = async () => {
+
+      const delBtn = card.querySelector('[data-act="del"]');
+      delBtn.style.display = adminOnly ? "" : "none";
+      delBtn.onclick = async ()=>{
         if (!confirm("Удалить материал?")) return;
         await deleteDoc(doc(db, "users", uid, "characters", charId, "assets", d.id));
       };
-      list.appendChild(row);
+
+      list.appendChild(card);
     });
   });
+}
+
+/* ================= Notion tab ================= */
+
+function mountNotion(route, charData){
+  const el = ensureUI();
+  const inp = el.querySelector("#nUrl");
+  const btnSave = el.querySelector("#nSave");
+  const btnOpen = el.querySelector("#nOpen");
+  const btnClear = el.querySelector("#nClear");
+  const wrap = el.querySelector("#notionFrameWrap");
+
+  const current = charData?.notionUrl || "";
+  inp.value = current;
+
+  function renderFrame(url){
+    if (!url){
+      wrap.innerHTML = `<div class="muted">Вставь ссылку на Notion — здесь появится встроенная страница.</div>`;
+      return;
+    }
+    const e = notionPublicEmbedUrl(url) || url;
+    wrap.innerHTML = `<iframe src="${escapeHtml(e)}" title="Notion page"></iframe>`;
+  }
+
+  renderFrame(current);
+
+  btnSave.onclick = async ()=>{
+    const url = inp.value.trim();
+    await updateDoc(charDocRef(route.uid, route.charId), {
+      notionUrl: url,
+      updatedAt: serverTimestamp(),
+    });
+    renderFrame(url);
+    alert("Сохранено");
+  };
+
+  btnOpen.onclick = ()=>{
+    const url = inp.value.trim();
+    if (!url) return;
+    window.open(url, "_blank", "noopener");
+  };
+
+  btnClear.onclick = async ()=>{
+    if (!confirm("Очистить Notion ссылку?")) return;
+    inp.value = "";
+    await updateDoc(charDocRef(route.uid, route.charId), {
+      notionUrl: "",
+      updatedAt: serverTimestamp(),
+    });
+    renderFrame("");
+  };
 }
 
 /* ================= Game: random location ================= */
@@ -948,14 +1240,12 @@ async function loadLocations(){
   cachedLocations = arr;
   return arr;
 }
-
 async function resolveCurrentLocation(charData){
   const locId = charData?.locationId;
   if (!locId) return null;
   const ls = await loadLocations();
   return ls.find(x=>x.id === locId) || null;
 }
-
 function mountGame(route, charData){
   const el = ensureUI();
   const locName = el.querySelector("#gLocName");
@@ -979,14 +1269,13 @@ function mountGame(route, charData){
 
   btnRefresh.onclick = render;
 
-  btnJoin.onclick = async () => {
+  btnJoin.onclick = async ()=>{
     const ls = await loadLocations();
     if (!ls.length){
       alert("Нет локаций. Создай хотя бы одну в #/locations (админ).");
       return;
     }
     const pick = ls[Math.floor(Math.random() * ls.length)];
-
     await updateDoc(charDocRef(route.uid, route.charId), {
       inGame: true,
       locationId: pick.id,
@@ -994,7 +1283,6 @@ function mountGame(route, charData){
       lastMoveAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-
     await render();
     alert("Персонаж отправлен в локацию: " + (pick.name || pick.id));
   };
@@ -1002,7 +1290,7 @@ function mountGame(route, charData){
   render();
 }
 
-/* ================= Open/close + lifecycle ================= */
+/* ================= lifecycle ================= */
 
 function cleanup(){
   if (unsubPages) unsubPages(); unsubPages = null; activePageId = null;
@@ -1021,10 +1309,8 @@ async function openCharacter(){
   const el = ensureUI();
   el.style.display = "block";
 
-  // context for other modules if needed
   window.__CHAR_CTX__ = { uid: route.uid, charId: route.charId, mode: route.mode };
 
-  // load character
   const snap = await getDoc(charDocRef(route.uid, route.charId));
   if (!snap.exists()){
     el.querySelector("#chTitle").textContent = "Персонаж не найден";
@@ -1036,30 +1322,27 @@ async function openCharacter(){
   el.querySelector("#chTitle").textContent = c.name || "Персонаж";
   el.querySelector("#chSub").textContent = (route.mode === "admin") ? "режим мастера" : "моя тетрадка";
 
-  // code button
-  el.querySelector("#chCopyCode").onclick = async () => {
+  el.querySelector("#chCopyCode").onclick = async ()=>{
     const code = `${route.uid}:${route.charId}`;
-    try {
+    try{
       await navigator.clipboard.writeText(code);
       alert("Код персонажа скопирован:\n" + code);
-    } catch {
+    }catch{
       prompt("Скопируйте вручную:", code);
     }
   };
 
-  // set default tab
+  // default tab
   setActiveTab("notebook");
 
-  // mount tab modules
   cleanup();
   mountPages(route);
   mountParams(route, c);
   mountInventory(route);
   mountGallery(route);
   mountMaster(route);
+  mountNotion(route, c);
   mountGame(route, c);
-
-  // If user is not admin: hide "от мастера" add controls already handled, but tab stays visible.
 }
 
 function closeCharacter(){
