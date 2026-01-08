@@ -72,12 +72,12 @@ function vimeoId(url){
   }catch{ return null; }
 }
 function notionPublicEmbedUrl(url){
-  // Notion public share can be embedded by adding ?embed=1 (usually works)
   if (!url) return null;
   try{
     const u = new URL(url);
-    // accept notion.site, notion.so and custom share
-    // just add embed=1 param
+    // убираем якорь на блок — для iframe обычно не нужен
+    u.hash = "";
+    // embed=1
     u.searchParams.set("embed","1");
     return u.toString();
   }catch{
