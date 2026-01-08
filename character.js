@@ -1,20 +1,15 @@
-// character.js
+// character.js — tabs + parameters + inventory + gallery + master assets + game
 import { auth, db } from "./firebase-config.js";
 import { requireAuth } from "./auth.js";
-import { pickRandomLocationId } from "./locations.js";
 
 import {
-  doc,
-  getDoc,
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-  updateDoc,
-  deleteDoc
+  doc, getDoc, setDoc, updateDoc,
+  collection, addDoc, deleteDoc,
+  query, orderBy, onSnapshot,
+  serverTimestamp, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+/* ================= utils ================= */
 
 function escapeHtml(s){
   return (s||"").replace(/[&<>"']/g, m => ({
@@ -22,21 +17,34 @@ function escapeHtml(s){
   }[m]));
 }
 
-/* ================= ROUTE ================= */
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
 function parseRoute(){
   const h = location.hash || "";
 
+  // user mode: #/character/CHARID
   if (h.startsWith("#/character/")){
     return { mode:"user", uid: auth.currentUser?.uid, charId: h.split("/")[2] };
   }
+
+  // admin mode: #/admin/character/UID/CHARID
   if (h.startsWith("#/admin/character/")){
     const p = h.split("/");
     return { mode:"admin", uid: p[3], charId: p[4] };
   }
+
   return null;
 }
 
+function mustBeAdminIfAdminRoute(route){
+  if (route?.mode !== "admin") return true;
+  if (window.APP_IS_ADMIN) return true;
+  location.hash = "#/notebook";
+  return false;
+}
+
 /* ================= UI ================= */
+
 function ensureUI(){
   let el = document.getElementById("charOverlay");
   if (el) return el;
@@ -57,82 +65,277 @@ function ensureUI(){
 
   el.innerHTML = `
     <div class="chTop">
-      <div style="min-width:0;">
-        <div id="charTitle" class="chTitle">Персонаж</div>
-        <div id="charSubtitle" class="chSub"></div>
+      <div class="chHead">
+        <div class="chTitle" id="chTitle">Персонаж</div>
+        <div class="chSub" id="chSub"></div>
       </div>
 
-      <button id="charCopyCode" class="btn ghost" style="margin-left:auto;">код</button>
-      <button id="charGameBtn" class="btn">в игру</button>
-      <button id="charClose" class="btn">✕</button>
+      <div class="chTabs" id="chTabs">
+        <button class="chTab is-active" data-tab="notebook">тетрадка</button>
+        <button class="chTab" data-tab="params">параметры</button>
+        <button class="chTab" data-tab="inventory">инвентарь</button>
+        <button class="chTab" data-tab="gallery">галерея</button>
+        <button class="chTab" data-tab="master">от мастера</button>
+        <button class="chTab" data-tab="game">в игру</button>
+      </div>
+
+      <div class="chActions">
+        <button class="btn ghost" id="chCopyCode">код</button>
+        <button class="btn" id="chClose">✕</button>
+      </div>
     </div>
 
-    <div class="chGrid">
-      <aside class="chSide">
-        <div class="chSideHead">
-          <div class="chSideLabel">Страницы</div>
-          <button id="pageAddBtn" class="btn ghost" style="padding:8px 10px;">+ добавить</button>
+    <div class="chBody">
+      <!-- NOTEBOOK view -->
+      <div class="chView is-active" data-view="notebook">
+        <div class="nbGrid">
+          <aside class="nbSide">
+            <div class="nbSideTop">
+              <div class="nbSideTitle">Страницы</div>
+              <button class="btn ghost" id="pgAdd">+ добавить</button>
+            </div>
+            <div id="pgList"></div>
+          </aside>
+          <main class="nbMain">
+            <div id="pgBody" class="nbPad">
+              <div class="muted">Выберите страницу слева</div>
+            </div>
+          </main>
         </div>
-        <div id="pageList"></div>
-      </aside>
+      </div>
 
-      <main class="chMain">
-        <div id="pageBody" style="max-width:900px;">
-          <div style="opacity:.6;">Выберите страницу слева</div>
+      <!-- PARAMS -->
+      <div class="chView" data-view="params">
+        <div class="pane">
+          <div class="paneRow">
+            <div class="paneCard">
+              <div class="paneH">Паспорт</div>
+              <label class="lbl">Описание</label>
+              <textarea class="field" id="pDesc" placeholder="Кто он, где живёт, что любит/не любит"></textarea>
+
+              <label class="lbl">Желания / идеи участника</label>
+              <textarea class="field" id="pWants" placeholder="Что хочется сделать? куда развить?"></textarea>
+
+              <div class="miniRow">
+                <button class="btn ghost" id="pReset">сброс</button>
+                <button class="btn" id="pSave">сохранить</button>
+              </div>
+            </div>
+
+            <div class="paneCard">
+              <div class="paneH">Аватар</div>
+              <div class="avaBox">
+                <div class="ava" id="pAvaPreview">🙂</div>
+                <div class="avaMeta">
+                  <div class="muted">Аватар закрепляет мастер (админ)</div>
+                  <input class="field" id="pAvaUrl" placeholder="URL картинки (админ)" />
+                  <div class="miniRow">
+                    <button class="btn ghost" id="pAvaClear">очистить</button>
+                    <button class="btn" id="pAvaSet">закрепить</button>
+                  </div>
+                </div>
+              </div>
+              <div class="muted" style="margin-top:10px;">*Пользователь видит, но не меняет (в MVP).</div>
+            </div>
+          </div>
+
+          <div class="paneCard">
+            <div class="paneH">Способности</div>
+            <div class="grid2">
+              <div>
+                <label class="lbl">Сила</label>
+                <input class="field" id="sPower" type="number" min="0" max="100" />
+              </div>
+              <div>
+                <label class="lbl">Ловкость</label>
+                <input class="field" id="sAgility" type="number" min="0" max="100" />
+              </div>
+              <div>
+                <label class="lbl">Магия</label>
+                <input class="field" id="sMagic" type="number" min="0" max="100" />
+              </div>
+              <div>
+                <label class="lbl">Харизма</label>
+                <input class="field" id="sCharm" type="number" min="0" max="100" />
+              </div>
+            </div>
+            <div class="miniRow">
+              <button class="btn" id="sSave">сохранить способности</button>
+            </div>
+          </div>
         </div>
-      </main>
+      </div>
+
+      <!-- INVENTORY -->
+      <div class="chView" data-view="inventory">
+        <div class="pane">
+          <div class="paneCard">
+            <div class="paneH">Инвентарь</div>
+            <div class="muted">Добавляйте предметы. (Потом сделаем “слоты/редкости/вес”.)</div>
+
+            <div class="invRow">
+              <input class="field" id="invName" placeholder="предмет (например: меч Арагорна)" />
+              <button class="btn" id="invAdd">добавить</button>
+            </div>
+
+            <div id="invList" class="invList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GALLERY -->
+      <div class="chView" data-view="gallery">
+        <div class="pane">
+          <div class="paneCard">
+            <div class="paneH">Галерея (свободные карточки)</div>
+            <div class="muted">MVP: добавляем картинку по URL, можно двигать и удалять.</div>
+
+            <div class="galRow">
+              <input class="field" id="gUrl" placeholder="URL картинки" />
+              <button class="btn" id="gAdd">+ добавить</button>
+            </div>
+          </div>
+
+          <div class="paneCard">
+            <div id="galStage" class="galStage"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MASTER -->
+      <div class="chView" data-view="master">
+        <div class="pane">
+          <div class="paneCard">
+            <div class="paneH">Материалы от мастера</div>
+            <div class="muted">Админ добавляет ссылки на изображения/видео/3D, пользователь смотрит.</div>
+
+            <div class="assetRow">
+              <input class="field" id="aTitle" placeholder="название (например: 'рендер персонажа')" />
+              <select class="field" id="aType">
+                <option value="image">image</option>
+                <option value="video">video</option>
+                <option value="model">3d</option>
+                <option value="link">link</option>
+              </select>
+              <input class="field" id="aUrl" placeholder="URL" />
+              <button class="btn" id="aAdd">добавить</button>
+            </div>
+
+            <div id="assetList" class="assetList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GAME -->
+      <div class="chView" data-view="game">
+        <div class="pane">
+          <div class="paneCard">
+            <div class="paneH">В игру</div>
+            <div class="muted">Персонаж закрепляется за локацией и сохраняет состояние.</div>
+
+            <div class="gameBox">
+              <div>
+                <div class="muted">Текущая локация</div>
+                <div class="gameLoc" id="gLocName">—</div>
+                <div class="muted" id="gLocDesc"></div>
+              </div>
+
+              <div class="miniRow">
+                <button class="btn ghost" id="gRefresh">обновить</button>
+                <button class="btn" id="gJoin">в игру (рандом)</button>
+              </div>
+            </div>
+
+            <div class="muted" style="margin-top:12px;">
+              Дальше добавим: NPC/задания/награды/интеракции, и “мир” как соцсеть.
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <style>
       .chTop{
-        display:flex; align-items:center; gap:12px;
-        padding:14px 16px; border-bottom:1px solid rgba(23,23,23,.08);
+        display:flex; align-items:flex-start; gap:12px;
+        padding: 12px 14px;
+        border-bottom:1px solid rgba(23,23,23,.08);
       }
+      .chHead{ min-width: 180px; }
       .chTitle{ font-family:'Vasek',ui-sans-serif; font-size:20px; line-height:1.1; }
-      .chSub{ opacity:.6; font-size:12px; margin-top:2px; }
-      .chGrid{
-        display:grid; grid-template-columns: 280px 1fr;
-        height: calc(100% - 58px); min-height:0;
-      }
-      .chSide{
-        border-right:1px solid rgba(23,23,23,.08);
-        padding:12px; overflow:auto; min-height:0;
-      }
-      .chMain{
-        padding:16px; overflow:auto; min-height:0;
-      }
-      .chSideHead{ display:flex; gap:8px; align-items:center; justify-content:space-between; margin-bottom:10px; }
-      .chSideLabel{ font-family:'Vasek',ui-sans-serif; font-size:14px; opacity:.85; }
+      .chSub{ opacity:.6; font-size:12px; margin-top:3px; }
 
-      @media (max-width: 980px){
-        #charOverlay{ inset:74px 10px 10px 10px; }
-        .chGrid{ grid-template-columns:1fr; }
-        .chSide{ border-right:0; border-bottom:1px solid rgba(23,23,23,.08); }
+      .chTabs{
+        display:flex; gap:8px; flex-wrap:wrap;
+        padding-top:2px;
+        flex: 1 1 auto;
       }
+      .chTab{
+        border:1px solid rgba(23,23,23,.14);
+        background: rgba(255,255,255,.78);
+        border-radius: 999px;
+        padding: 8px 10px;
+        cursor:pointer;
+        font-family:'Vasek', ui-sans-serif;
+        font-size: 14px;
+        opacity:.85;
+      }
+      .chTab.is-active{
+        background: rgba(23,23,23,.06);
+        opacity:1;
+      }
+      .chActions{ display:flex; gap:10px; margin-left:auto; }
+
+      .chBody{
+        height: calc(100% - 60px);
+        min-height:0;
+        overflow:hidden;
+      }
+      .chView{ display:none; height:100%; }
+      .chView.is-active{ display:block; }
+
+      .nbGrid{
+        height:100%;
+        display:grid;
+        grid-template-columns: 290px 1fr;
+        min-height:0;
+      }
+      .nbSide{
+        border-right:1px solid rgba(23,23,23,.08);
+        overflow:auto;
+        padding: 12px;
+        min-height:0;
+      }
+      .nbSideTop{
+        display:flex; align-items:center; justify-content:space-between;
+        gap:10px; margin-bottom:10px;
+      }
+      .nbSideTitle{ font-family:'Vasek',ui-sans-serif; font-size:14px; opacity:.85; }
+      .nbMain{ overflow:auto; min-height:0; }
+      .nbPad{ padding: 14px 16px; }
+      .muted{ opacity:.6; }
 
       .pgItem{
-        margin-top:8px;
-        padding:10px 10px;
+        margin-top:8px; padding:10px 10px;
         cursor:pointer;
         border-radius:14px;
         border:1px solid rgba(23,23,23,.10);
         background: rgba(255,255,255,.68);
       }
       .pgItem:hover{ background: rgba(255,255,255,.82); }
-      .pgItem.is-active{
-        outline:2px solid rgba(23,23,23,.18);
-        background: rgba(255,255,255,.86);
+      .pgItem.is-active{ outline:2px solid rgba(23,23,23,.18); background: rgba(255,255,255,.86); }
+      .pgTitle{ font-family:'Vasek',ui-sans-serif; font-size:14px; line-height:1.15; }
+      .pgMeta{ opacity:.55; font-size:11px; margin-top:4px; }
+
+      .pane{ padding: 14px 16px; height:100%; overflow:auto; }
+      .paneRow{ display:grid; grid-template-columns: 1.2fr .8fr; gap:12px; }
+      .paneCard{
+        border-radius: 22px;
+        background: rgba(255,255,255,.70);
+        border: 1px solid rgba(23,23,23,.10);
+        padding: 12px;
       }
-      .pgTitle{
-        font-family:'Vasek',ui-sans-serif;
-        font-size:14px;
-        line-height:1.15;
-      }
-      .pgMeta{
-        opacity:.55;
-        font-size:11px;
-        margin-top:4px;
-      }
+      .paneH{ font-family:'Vasek',ui-sans-serif; font-size:16px; margin-bottom:8px; }
+      .lbl{ display:block; font-size:12px; opacity:.65; margin-top:10px; margin-bottom:6px; }
       .field{
         width:100%;
         padding:10px 12px;
@@ -143,153 +346,254 @@ function ensureUI(){
         font-size:14px;
         outline:none;
       }
-      textarea.field{ min-height: 260px; resize: vertical; }
-      .row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:10px; }
-      .card{
-        border-radius:22px;
+      textarea.field{ min-height: 110px; resize: vertical; }
+      .miniRow{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:10px; }
+
+      .avaBox{ display:flex; gap:12px; align-items:flex-start; }
+      .ava{
+        width:80px; height:80px; border-radius:22px;
+        border: 1px solid rgba(23,23,23,.12);
+        background: rgba(23,23,23,.04);
+        display:grid; place-items:center;
+        overflow:hidden;
+      }
+      .ava img{ width:100%; height:100%; object-fit:cover; }
+      .avaMeta{ flex:1; }
+
+      .grid2{ display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; }
+
+      .invRow{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+      .invRow .field{ flex: 1 1 260px; }
+      .invList{ margin-top:12px; display:grid; gap:10px; }
+      .invItem{
+        display:flex; align-items:center; justify-content:space-between; gap:10px;
+        padding:10px 12px;
+        border-radius:16px;
         border:1px solid rgba(23,23,23,.10);
-        background: rgba(255,255,255,.65);
-        padding:12px;
+        background: rgba(255,255,255,.70);
+      }
+      .invItem b{ font-family:'Vasek',ui-sans-serif; font-weight:400; }
+
+      .galRow{ display:flex; gap:10px; flex-wrap:wrap; }
+      .galRow .field{ flex: 1 1 300px; }
+
+      .galStage{
+        position:relative;
+        min-height: 520px;
+        border-radius: 20px;
+        border:1px dashed rgba(23,23,23,.16);
+        background: rgba(255,255,255,.55);
+        overflow:hidden;
+      }
+      .galCard{
+        position:absolute;
+        width: 180px;
+        border-radius: 16px;
+        border:1px solid rgba(23,23,23,.12);
+        background: rgba(255,255,255,.78);
+        box-shadow: 0 10px 26px rgba(0,0,0,.10);
+        cursor: grab;
+        user-select:none;
+      }
+      .galCard:active{ cursor: grabbing; }
+      .galCard img{
+        width:100%; height:120px; object-fit:cover;
+        border-radius: 16px 16px 0 0;
+        display:block;
+      }
+      .galCardBar{
+        display:flex; gap:8px; justify-content:space-between; align-items:center;
+        padding: 8px 10px;
+        font-size: 12px; opacity:.75;
+      }
+      .xBtn{
+        border:1px solid rgba(23,23,23,.14);
+        background: rgba(255,255,255,.78);
+        border-radius: 12px;
+        padding: 6px 8px;
+        cursor:pointer;
+        font-family:'Vasek',ui-sans-serif;
+      }
+
+      .assetRow{
+        display:grid;
+        grid-template-columns: 1fr 130px 1fr auto;
+        gap:10px;
+        margin-top:10px;
+      }
+      .assetList{ margin-top:12px; display:grid; gap:10px; }
+      .assetItem{
+        display:flex; align-items:center; justify-content:space-between; gap:10px;
+        padding:10px 12px;
+        border-radius:16px;
+        border:1px solid rgba(23,23,23,.10);
+        background: rgba(255,255,255,.70);
+      }
+      .assetItem b{ font-family:'Vasek',ui-sans-serif; font-weight:400; }
+      .assetItem a{ word-break: break-all; opacity:.85; }
+
+      .gameBox{
+        display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;
+        margin-top:10px;
+        padding: 12px;
+        border-radius: 18px;
+        border:1px solid rgba(23,23,23,.10);
+        background: rgba(255,255,255,.70);
+      }
+      .gameLoc{ font-family:'Vasek',ui-sans-serif; font-size:18px; margin-top:4px; }
+
+      @media (max-width: 980px){
+        #charOverlay{ inset:74px 10px 10px 10px; }
+        .chTop{ flex-direction:column; align-items:stretch; gap:10px; }
+        .chActions{ margin-left:0; justify-content:flex-end; }
+        .nbGrid{ grid-template-columns: 1fr; }
+        .nbSide{ border-right:0; border-bottom:1px solid rgba(23,23,23,.08); }
+        .paneRow{ grid-template-columns: 1fr; }
+        .assetRow{ grid-template-columns: 1fr; }
+        .galStage{ min-height: 420px; }
       }
     </style>
   `;
 
   document.body.appendChild(el);
-  el.querySelector("#charClose").onclick = () => (location.hash = "#/notebook");
+
+  el.querySelector("#chClose").onclick = () => (location.hash = "#/notebook");
+
+  // tabs
+  el.querySelectorAll(".chTab").forEach(btn=>{
+    btn.onclick = () => setActiveTab(btn.dataset.tab);
+  });
+
   return el;
 }
 
-/* ================= LOGIC ================= */
+function setActiveTab(tab){
+  const el = ensureUI();
+  el.querySelectorAll(".chTab").forEach(b => b.classList.toggle("is-active", b.dataset.tab === tab));
+  el.querySelectorAll(".chView").forEach(v => v.classList.toggle("is-active", v.dataset.view === tab));
+}
+
+/* ================= Data paths ================= */
+
+function charDocRef(uid, charId){
+  return doc(db, "users", uid, "characters", charId);
+}
+
+/* ================= Notebook pages (тетрадка) ================= */
+
 let unsubPages = null;
 let activePageId = null;
-let currentRoute = null;
-let currentCharacterSnap = null;
 
-function canEditPage(mode, origin){
-  if (mode === "admin") return true;
-  return origin !== "admin";
+function canEditPage(routeMode, origin){
+  if (routeMode === "admin") return true;
+  return origin !== "admin"; // user can't edit admin pages
 }
 
-async function joinGame(){
-  const r = currentRoute;
-  if (!r) return;
-
-  // only owner can join their own character
-  if (r.mode === "admin"){
-    alert("Зайти в игру можно только как пользователь. Админ — задаёт контент.");
-    return;
-  }
-
-  const locId = await pickRandomLocationId();
-  if (!locId){
-    alert("Пока нет локаций. (Админу нужно создать хотя бы одну в меню → “локации”)");
-    return;
-  }
-
-  await updateDoc(doc(db,"users", r.uid, "characters", r.charId), {
-    inGame: true,
-    locationId: locId,
-    joinedAt: serverTimestamp(),
-    lastMoveAt: serverTimestamp()
-  });
-
-  alert("Готово! Персонаж отправлен в локацию.");
-  location.hash = "#/locations";
-}
-
-async function openCharacter(){
-  if (!requireAuth()) return;
-
-  const route = parseRoute();
-  if (!route || !route.uid || !route.charId) return;
-  currentRoute = route;
-
+function mountPages(route){
+  const el = ensureUI();
   const { uid, charId, mode } = route;
-  const wrap = ensureUI();
-  wrap.style.display = "block";
 
-  // load character
-  const charRef = doc(db, "users", uid, "characters", charId);
-  const snap = await getDoc(charRef);
-  currentCharacterSnap = snap;
+  const listEl = el.querySelector("#pgList");
+  const bodyEl = el.querySelector("#pgBody");
 
-  const titleEl = wrap.querySelector("#charTitle");
-  const subEl = wrap.querySelector("#charSubtitle");
-
-  if (!snap.exists()){
-    titleEl.textContent = "Персонаж не найден";
-    subEl.textContent = "";
-  } else {
-    const c = snap.data();
-    titleEl.textContent = c.name || "Персонаж";
-    const parts = [];
-    parts.push(mode === "admin" ? "режим мастера" : "моя тетрадка");
-    if (c.inGame && c.locationId) parts.push("в игре");
-    subEl.textContent = parts.join(" • ");
-  }
-
-  // code button
-  wrap.querySelector("#charCopyCode").onclick = async () => {
-    const code = `${uid}:${charId}`;
-    try { await navigator.clipboard.writeText(code); alert("Код персонажа скопирован:\n"+code); }
-    catch { prompt("Скопируйте код:", code); }
-  };
-
-  // game button
-  wrap.querySelector("#charGameBtn").onclick = () => joinGame().catch(e=>{
-    console.error(e);
-    alert("Ошибка входа в игру: " + (e?.message || e));
-  });
-
-  // pages list
-  const listEl = wrap.querySelector("#pageList");
-  const bodyEl = wrap.querySelector("#pageBody");
-
-  wrap.querySelector("#pageAddBtn").onclick = async ()=>{
+  el.querySelector("#pgAdd").onclick = async () => {
     const title = prompt("Название страницы");
     if (!title) return;
-    await addDoc(collection(db,"users",uid,"characters",charId,"pages"), {
+
+    await addDoc(collection(db, "users", uid, "characters", charId, "pages"), {
       title,
-      body:"",
-      origin: mode==="admin" ? "admin" : "user",
+      body: "",
+      origin: mode === "admin" ? "admin" : "user",
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
   };
 
   if (unsubPages) unsubPages();
   unsubPages = onSnapshot(
-    query(collection(db,"users",uid,"characters",charId,"pages"), orderBy("createdAt","asc")),
-    (snapPages)=>{
+    query(collection(db, "users", uid, "characters", charId, "pages"), orderBy("createdAt","asc")),
+    (snap) => {
       listEl.innerHTML = "";
 
-      if (snapPages.empty){
-        listEl.innerHTML = `<div style="opacity:.6; font-size:13px; line-height:1.45; padding:8px 2px;">
-          Пока нет страниц. Нажми “+ добавить”.
-        </div>`;
-
-        bodyEl.innerHTML = `
-          <div class="card">
-            <div style="font-family:'Vasek',ui-sans-serif; font-size:18px;">Здесь будет тетрадка персонажа</div>
-            <div style="opacity:.7; line-height:1.45; margin-top:8px;">
-              Добавляйте страницы: заметки, референсы, файлы.  
-              Админ может добавлять “страницы от мастера”.
-            </div>
-          </div>
-        `;
+      if (snap.empty){
+        listEl.innerHTML = `<div class="muted" style="padding:8px 2px;">Пока нет страниц. Нажми “+ добавить”.</div>`;
+        bodyEl.innerHTML = `<div class="muted">Создай первую страницу.</div>`;
         activePageId = null;
         return;
       }
 
-      snapPages.forEach((d)=>{
+      snap.forEach(d=>{
         const p = d.data();
         const item = document.createElement("div");
-        item.className = "pgItem" + (d.id===activePageId ? " is-active" : "");
+        item.className = "pgItem" + (d.id === activePageId ? " is-active" : "");
         item.innerHTML = `
-          <div class="pgTitle">${escapeHtml(p.title||"")}</div>
-          <div class="pgMeta">${p.origin==="admin" ? "от мастера" : "моё"}</div>
+          <div class="pgTitle">${escapeHtml(p.title || "")}</div>
+          <div class="pgMeta">${p.origin === "admin" ? "от мастера" : "моя"} • ${escapeHtml(p.origin||"")}</div>
         `;
-        item.onclick = ()=>openPage(d.id, p, d.ref);
+
+        item.onclick = () => {
+          activePageId = d.id;
+          listEl.querySelectorAll(".pgItem").forEach(x=>x.classList.remove("is-active"));
+          item.classList.add("is-active");
+
+          const editable = canEditPage(mode, p.origin);
+
+          bodyEl.innerHTML = `
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <div>
+                <div style="font-family:'Vasek',ui-sans-serif; font-size:18px;">${escapeHtml(p.title||"")}</div>
+                <div class="muted" style="font-size:12px; margin-top:4px;">
+                  ${p.origin === "admin" ? "контент от мастера" : "контент пользователя"}
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn ghost" id="pgRename">переименовать</button>
+                <button class="btn ghost" id="pgDelete">удалить</button>
+              </div>
+            </div>
+
+            <div style="margin-top:12px;">
+              <textarea class="field" id="pgBodyEdit" ${editable ? "" : "disabled"}>${escapeHtml(p.body||"")}</textarea>
+              <div class="miniRow">
+                <button class="btn ghost" id="pgCancel">отмена</button>
+                <button class="btn" id="pgSave" ${editable ? "" : "disabled"}>сохранить</button>
+              </div>
+              ${editable ? "" : `<div class="muted" style="font-size:12px; margin-top:6px;">
+                Это страница от мастера — пользователь её не редактирует.
+              </div>`}
+            </div>
+          `;
+
+          bodyEl.querySelector("#pgRename").onclick = async () => {
+            const nt = prompt("Новое название", p.title || "");
+            if (!nt) return;
+            await updateDoc(doc(db, "users", uid, "characters", charId, "pages", d.id), {
+              title: nt,
+              updatedAt: serverTimestamp(),
+            });
+          };
+
+          bodyEl.querySelector("#pgDelete").onclick = async () => {
+            if (!confirm("Удалить страницу?")) return;
+            await deleteDoc(doc(db, "users", uid, "characters", charId, "pages", d.id));
+            activePageId = null;
+            bodyEl.innerHTML = `<div class="muted">Страница удалена.</div>`;
+          };
+
+          bodyEl.querySelector("#pgCancel").onclick = () => item.click();
+
+          bodyEl.querySelector("#pgSave").onclick = async () => {
+            const nextBody = bodyEl.querySelector("#pgBodyEdit").value;
+            await updateDoc(doc(db, "users", uid, "characters", charId, "pages", d.id), {
+              body: nextBody,
+              updatedAt: serverTimestamp(),
+            });
+            const btn = bodyEl.querySelector("#pgSave");
+            btn.textContent = "сохранено ✓";
+            setTimeout(()=>{ if (btn) btn.textContent = "сохранить"; }, 900);
+          };
+        };
+
         listEl.appendChild(item);
       });
 
@@ -298,78 +602,474 @@ async function openCharacter(){
       }
     }
   );
+}
 
-  function openPage(id, p, ref){
-    activePageId = id;
-    listEl.querySelectorAll(".pgItem").forEach(x=>x.classList.remove("is-active"));
-    [...listEl.children].find(n=>n.classList?.contains("pgItem") && n.querySelector(".pgTitle")?.textContent=== (p.title||""))?.classList.add("is-active");
+/* ================= Parameters + Stats ================= */
 
-    const editable = canEditPage(mode, p.origin);
+function mountParams(route, charData){
+  const el = ensureUI();
+  const { mode } = route;
 
-    bodyEl.innerHTML = `
-      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-        <div>
-          <div style="font-family:'Vasek',ui-sans-serif; font-size:20px; line-height:1.1;">${escapeHtml(p.title||"")}</div>
-          <div style="opacity:.6; font-size:12px; margin-top:4px;">
-            ${p.origin==="admin" ? "контент от мастера" : "контент пользователя"}
-            ${mode==="admin" ? " • вы в режиме админа" : ""}
-          </div>
-        </div>
+  const desc = el.querySelector("#pDesc");
+  const wants = el.querySelector("#pWants");
 
-        <div class="row">
-          <button class="btn ghost" id="pgRename">переименовать</button>
-          <button class="btn ghost" id="pgDelete">удалить</button>
-        </div>
-      </div>
+  const avaPreview = el.querySelector("#pAvaPreview");
+  const avaUrl = el.querySelector("#pAvaUrl");
+  const btnSet = el.querySelector("#pAvaSet");
+  const btnClear = el.querySelector("#pAvaClear");
 
-      <div style="margin-top:12px;">
-        <textarea class="field" id="pgBody" ${editable ? "" : "disabled"}>${escapeHtml(p.body||"")}</textarea>
-        <div class="row">
-          <button class="btn ghost" id="pgCancel">отмена</button>
-          <button class="btn" id="pgSave" ${editable ? "" : "disabled"}>сохранить</button>
-        </div>
-        ${editable ? "" : `<div style="opacity:.6; font-size:12px; margin-top:6px;">
-          Это страница от мастера — пользователь её не редактирует.
-        </div>`}
-      </div>
-    `;
+  // stats
+  const sPower = el.querySelector("#sPower");
+  const sAgility = el.querySelector("#sAgility");
+  const sMagic = el.querySelector("#sMagic");
+  const sCharm = el.querySelector("#sCharm");
 
-    bodyEl.querySelector("#pgRename").onclick = async ()=>{
-      const nt = prompt("Новое название", p.title||"");
-      if (!nt) return;
-      await updateDoc(ref, { title: nt, updatedAt: serverTimestamp() });
-    };
+  desc.value = charData?.profile?.desc || "";
+  wants.value = charData?.profile?.wants || "";
 
-    bodyEl.querySelector("#pgDelete").onclick = async ()=>{
-      if (!confirm("Удалить страницу?")) return;
-      await deleteDoc(ref);
-      activePageId = null;
-      bodyEl.innerHTML = `<div style="opacity:.6;">Страница удалена.</div>`;
-    };
-
-    bodyEl.querySelector("#pgCancel").onclick = ()=> openPage(id,p,ref);
-
-    bodyEl.querySelector("#pgSave").onclick = async ()=>{
-      const nextBody = bodyEl.querySelector("#pgBody").value;
-      await updateDoc(ref, { body: nextBody, updatedAt: serverTimestamp() });
-      const btn = bodyEl.querySelector("#pgSave");
-      btn.textContent = "сохранено ✓";
-      setTimeout(()=>{ if (btn) btn.textContent="сохранить"; }, 900);
-    };
+  const avatar = charData?.avatarUrl || "";
+  if (avatar){
+    avaPreview.innerHTML = `<img src="${escapeHtml(avatar)}" alt="">`;
+    avaUrl.value = avatar;
+  } else {
+    avaPreview.textContent = "🙂";
+    avaUrl.value = "";
   }
+
+  // user can't change avatar (MVP)
+  const canAdminEditAvatar = (mode === "admin");
+  avaUrl.disabled = !canAdminEditAvatar;
+  btnSet.disabled = !canAdminEditAvatar;
+  btnClear.disabled = !canAdminEditAvatar;
+
+  el.querySelector("#pSave").onclick = async () => {
+    await updateDoc(charDocRef(route.uid, route.charId), {
+      "profile.desc": desc.value,
+      "profile.wants": wants.value,
+      updatedAt: serverTimestamp(),
+    });
+    alert("Сохранено");
+  };
+
+  el.querySelector("#pReset").onclick = () => {
+    desc.value = charData?.profile?.desc || "";
+    wants.value = charData?.profile?.wants || "";
+  };
+
+  btnSet.onclick = async () => {
+    const url = avaUrl.value.trim();
+    if (!url) { alert("Вставь URL"); return; }
+    await updateDoc(charDocRef(route.uid, route.charId), {
+      avatarUrl: url,
+      avatarSetBy: "admin",
+      avatarSetAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    avaPreview.innerHTML = `<img src="${escapeHtml(url)}" alt="">`;
+    alert("Аватар закреплён");
+  };
+
+  btnClear.onclick = async () => {
+    await updateDoc(charDocRef(route.uid, route.charId), {
+      avatarUrl: "",
+      updatedAt: serverTimestamp(),
+    });
+    avaPreview.textContent = "🙂";
+    avaUrl.value = "";
+  };
+
+  // stats fill
+  const stats = charData?.stats || {};
+  sPower.value = stats.power ?? 20;
+  sAgility.value = stats.agility ?? 20;
+  sMagic.value = stats.magic ?? 20;
+  sCharm.value = stats.charm ?? 20;
+
+  el.querySelector("#sSave").onclick = async () => {
+    await updateDoc(charDocRef(route.uid, route.charId), {
+      stats: {
+        power: clamp(parseInt(sPower.value||"0",10), 0, 100),
+        agility: clamp(parseInt(sAgility.value||"0",10), 0, 100),
+        magic: clamp(parseInt(sMagic.value||"0",10), 0, 100),
+        charm: clamp(parseInt(sCharm.value||"0",10), 0, 100),
+      },
+      updatedAt: serverTimestamp(),
+    });
+    alert("Способности сохранены");
+  };
+}
+
+/* ================= Inventory ================= */
+
+let unsubInv = null;
+
+function mountInventory(route){
+  const el = ensureUI();
+  const { uid, charId, mode } = route;
+
+  const list = el.querySelector("#invList");
+  const inp = el.querySelector("#invName");
+  const addBtn = el.querySelector("#invAdd");
+
+  const invCol = collection(db, "users", uid, "characters", charId, "inventory");
+
+  addBtn.onclick = async () => {
+    const name = inp.value.trim();
+    if (!name) return;
+    await addDoc(invCol, {
+      name,
+      origin: mode === "admin" ? "admin" : "user",
+      createdAt: serverTimestamp(),
+    });
+    inp.value = "";
+  };
+
+  if (unsubInv) unsubInv();
+  unsubInv = onSnapshot(query(invCol, orderBy("createdAt","desc")), (snap)=>{
+    list.innerHTML = "";
+    if (snap.empty){
+      list.innerHTML = `<div class="muted" style="padding:8px 2px;">Пока пусто.</div>`;
+      return;
+    }
+    snap.forEach(d=>{
+      const it = d.data();
+      const row = document.createElement("div");
+      row.className = "invItem";
+      row.innerHTML = `
+        <div><b>${escapeHtml(it.name||"")}</b> <span class="muted" style="font-size:12px;">• ${escapeHtml(it.origin||"")}</span></div>
+        <button class="xBtn" title="удалить">✕</button>
+      `;
+      row.querySelector("button").onclick = async () => {
+        if (!confirm("Удалить предмет?")) return;
+        await deleteDoc(doc(db, "users", uid, "characters", charId, "inventory", d.id));
+      };
+      list.appendChild(row);
+    });
+  });
+}
+
+/* ================= Gallery (URL + drag) ================= */
+
+let unsubGallery = null;
+
+function enableDrag(card, onMove){
+  let dragging = false;
+  let startX=0, startY=0, baseX=0, baseY=0;
+
+  const down = (e)=>{
+    dragging = true;
+    const pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX; startY = pt.clientY;
+    const r = card.getBoundingClientRect();
+    baseX = r.left; baseY = r.top;
+    card.setPointerCapture?.(e.pointerId);
+    e.preventDefault?.();
+  };
+
+  const move = (e)=>{
+    if (!dragging) return;
+    const pt = e.touches ? e.touches[0] : e;
+    const dx = pt.clientX - startX;
+    const dy = pt.clientY - startY;
+    onMove(dx, dy);
+  };
+
+  const up = ()=>{
+    dragging = false;
+  };
+
+  card.addEventListener("pointerdown", down);
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
+
+  // touch fallback (Android)
+  card.addEventListener("touchstart", down, { passive:false });
+  window.addEventListener("touchmove", move, { passive:false });
+  window.addEventListener("touchend", up);
+}
+
+function mountGallery(route){
+  const el = ensureUI();
+  const { uid, charId } = route;
+
+  const stage = el.querySelector("#galStage");
+  const urlInp = el.querySelector("#gUrl");
+  const addBtn = el.querySelector("#gAdd");
+
+  const galCol = collection(db, "users", uid, "characters", charId, "gallery");
+
+  addBtn.onclick = async () => {
+    const url = urlInp.value.trim();
+    if (!url) return;
+
+    await addDoc(galCol, {
+      url,
+      x: 24 + Math.floor(Math.random()*160),
+      y: 24 + Math.floor(Math.random()*120),
+      createdAt: serverTimestamp(),
+    });
+    urlInp.value = "";
+  };
+
+  if (unsubGallery) unsubGallery();
+  unsubGallery = onSnapshot(query(galCol, orderBy("createdAt","desc")), (snap)=>{
+    stage.innerHTML = "";
+
+    snap.forEach(d=>{
+      const g = d.data();
+      const card = document.createElement("div");
+      card.className = "galCard";
+      card.style.left = (g.x ?? 20) + "px";
+      card.style.top  = (g.y ?? 20) + "px";
+      card.innerHTML = `
+        <img src="${escapeHtml(g.url||"")}" alt="">
+        <div class="galCardBar">
+          <span>ref</span>
+          <button class="xBtn" title="удалить">✕</button>
+        </div>
+      `;
+
+      // delete
+      card.querySelector("button").onclick = async (e) => {
+        e.stopPropagation();
+        await deleteDoc(doc(db, "users", uid, "characters", charId, "gallery", d.id));
+      };
+
+      // drag
+      const stageRect = stage.getBoundingClientRect();
+      const startLeft = g.x ?? 20;
+      const startTop  = g.y ?? 20;
+
+      enableDrag(card, (dx, dy)=>{
+        // convert dx/dy to stage-local coords roughly
+        const nx = startLeft + dx;
+        const ny = startTop + dy;
+        card.style.left = nx + "px";
+        card.style.top = ny + "px";
+      });
+
+      // on pointerup -> persist new pos (cheap debounce)
+      let t = null;
+      const save = async () => {
+        clearTimeout(t);
+        t = setTimeout(async ()=>{
+          const x = parseInt(card.style.left||"0",10);
+          const y = parseInt(card.style.top||"0",10);
+          await updateDoc(doc(db, "users", uid, "characters", charId, "gallery", d.id), {
+            x, y
+          });
+        }, 250);
+      };
+      card.addEventListener("pointerup", save);
+      card.addEventListener("touchend", save);
+
+      stage.appendChild(card);
+    });
+  });
+}
+
+/* ================= Master assets ================= */
+
+let unsubAssets = null;
+
+function mountMaster(route){
+  const el = ensureUI();
+  const { uid, charId, mode } = route;
+
+  const list = el.querySelector("#assetList");
+  const aTitle = el.querySelector("#aTitle");
+  const aType = el.querySelector("#aType");
+  const aUrl = el.querySelector("#aUrl");
+  const aAdd = el.querySelector("#aAdd");
+
+  const col = collection(db, "users", uid, "characters", charId, "assets");
+
+  // only admin can add in MVP
+  aAdd.disabled = (mode !== "admin");
+  aTitle.disabled = (mode !== "admin");
+  aType.disabled = (mode !== "admin");
+  aUrl.disabled = (mode !== "admin");
+
+  aAdd.onclick = async () => {
+    const title = aTitle.value.trim();
+    const url = aUrl.value.trim();
+    const type = aType.value;
+    if (!title || !url) return;
+
+    await addDoc(col, {
+      title, url, type,
+      origin: "admin",
+      createdAt: serverTimestamp(),
+    });
+
+    aTitle.value = "";
+    aUrl.value = "";
+  };
+
+  if (unsubAssets) unsubAssets();
+  unsubAssets = onSnapshot(query(col, orderBy("createdAt","desc")), (snap)=>{
+    list.innerHTML = "";
+    if (snap.empty){
+      list.innerHTML = `<div class="muted" style="padding:8px 2px;">Пока нет материалов.</div>`;
+      return;
+    }
+    snap.forEach(d=>{
+      const a = d.data();
+      const row = document.createElement("div");
+      row.className = "assetItem";
+      row.innerHTML = `
+        <div>
+          <b>${escapeHtml(a.title||"")}</b>
+          <div class="muted" style="font-size:12px;">${escapeHtml(a.type||"")} • ${escapeHtml(a.origin||"")}</div>
+          <div style="margin-top:6px;"><a href="${escapeHtml(a.url||"")}" target="_blank" rel="noopener">открыть</a></div>
+        </div>
+        <button class="xBtn" title="удалить">✕</button>
+      `;
+      const del = row.querySelector("button");
+      del.style.display = (mode === "admin") ? "" : "none";
+      del.onclick = async () => {
+        if (!confirm("Удалить материал?")) return;
+        await deleteDoc(doc(db, "users", uid, "characters", charId, "assets", d.id));
+      };
+      list.appendChild(row);
+    });
+  });
+}
+
+/* ================= Game: random location ================= */
+
+let cachedLocations = null;
+
+async function loadLocations(){
+  if (cachedLocations) return cachedLocations;
+  const snap = await getDocs(collection(db, "locations"));
+  const arr = [];
+  snap.forEach(d=> arr.push({ id:d.id, ...d.data() }));
+  cachedLocations = arr;
+  return arr;
+}
+
+async function resolveCurrentLocation(charData){
+  const locId = charData?.locationId;
+  if (!locId) return null;
+  const ls = await loadLocations();
+  return ls.find(x=>x.id === locId) || null;
+}
+
+function mountGame(route, charData){
+  const el = ensureUI();
+  const locName = el.querySelector("#gLocName");
+  const locDesc = el.querySelector("#gLocDesc");
+  const btnJoin = el.querySelector("#gJoin");
+  const btnRefresh = el.querySelector("#gRefresh");
+
+  async function render(){
+    const fresh = await getDoc(charDocRef(route.uid, route.charId));
+    const c = fresh.exists() ? fresh.data() : charData;
+    const loc = await resolveCurrentLocation(c);
+
+    if (!loc){
+      locName.textContent = "не выбрана";
+      locDesc.textContent = "Нажми “в игру (рандом)” чтобы попасть в мир.";
+    } else {
+      locName.textContent = loc.name || loc.id;
+      locDesc.textContent = loc.desc || "";
+    }
+  }
+
+  btnRefresh.onclick = render;
+
+  btnJoin.onclick = async () => {
+    const ls = await loadLocations();
+    if (!ls.length){
+      alert("Нет локаций. Создай хотя бы одну в #/locations (админ).");
+      return;
+    }
+    const pick = ls[Math.floor(Math.random() * ls.length)];
+
+    await updateDoc(charDocRef(route.uid, route.charId), {
+      inGame: true,
+      locationId: pick.id,
+      joinedAt: serverTimestamp(),
+      lastMoveAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    await render();
+    alert("Персонаж отправлен в локацию: " + (pick.name || pick.id));
+  };
+
+  render();
+}
+
+/* ================= Open/close + lifecycle ================= */
+
+function cleanup(){
+  if (unsubPages) unsubPages(); unsubPages = null; activePageId = null;
+  if (unsubInv) unsubInv(); unsubInv = null;
+  if (unsubGallery) unsubGallery(); unsubGallery = null;
+  if (unsubAssets) unsubAssets(); unsubAssets = null;
+}
+
+async function openCharacter(){
+  if (!requireAuth()) return;
+
+  const route = parseRoute();
+  if (!route || !route.uid || !route.charId) return;
+  if (!mustBeAdminIfAdminRoute(route)) return;
+
+  const el = ensureUI();
+  el.style.display = "block";
+
+  // context for other modules if needed
+  window.__CHAR_CTX__ = { uid: route.uid, charId: route.charId, mode: route.mode };
+
+  // load character
+  const snap = await getDoc(charDocRef(route.uid, route.charId));
+  if (!snap.exists()){
+    el.querySelector("#chTitle").textContent = "Персонаж не найден";
+    el.querySelector("#chSub").textContent = "";
+    return;
+  }
+  const c = snap.data();
+
+  el.querySelector("#chTitle").textContent = c.name || "Персонаж";
+  el.querySelector("#chSub").textContent = (route.mode === "admin") ? "режим мастера" : "моя тетрадка";
+
+  // code button
+  el.querySelector("#chCopyCode").onclick = async () => {
+    const code = `${route.uid}:${route.charId}`;
+    try {
+      await navigator.clipboard.writeText(code);
+      alert("Код персонажа скопирован:\n" + code);
+    } catch {
+      prompt("Скопируйте вручную:", code);
+    }
+  };
+
+  // set default tab
+  setActiveTab("notebook");
+
+  // mount tab modules
+  cleanup();
+  mountPages(route);
+  mountParams(route, c);
+  mountInventory(route);
+  mountGallery(route);
+  mountMaster(route);
+  mountGame(route, c);
+
+  // If user is not admin: hide "от мастера" add controls already handled, but tab stays visible.
 }
 
 function closeCharacter(){
-  document.getElementById("charOverlay")?.style.display="none";
-  if (unsubPages) unsubPages();
-  unsubPages = null;
-  activePageId = null;
-  currentRoute = null;
-  currentCharacterSnap = null;
+  const el = document.getElementById("charOverlay");
+  if (el) el.style.display = "none";
+  cleanup();
 }
 
 function route(){
-  const h = location.hash || "#/";
+  const h = location.hash || "";
   if (h.startsWith("#/character/") || h.startsWith("#/admin/character/")){
     openCharacter().catch(e=>console.error("[character] open error", e));
   } else {
