@@ -245,9 +245,11 @@ function mountLoginOverlay() {
         try {
           await login();
           location.hash = "#/notebook";
-        } catch (e) {
-          alert("Ошибка входа");
-        }
+} catch (e) {
+  console.error("AUTH ERROR:", e);
+  alert(`${e?.code || ""}\n${e?.message || e}`);
+}
+
       };
     } else {
       overlay?.remove();
