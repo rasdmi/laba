@@ -9,25 +9,19 @@ import {
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-import {
-  doc,
-  setDoc,
-  serverTimestamp,
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 /* ================= ADMIN ================= */
-
 export const ADMIN_EMAILS = [
-  rastadmi@gmail.com, // ← замени на свой gmail
+  "rastadmi@gmail.com"
 ];
 
-export function isAdminUser(user) {
+export function isAdminUser(user){
   const email = (user?.email || "").toLowerCase();
-  return ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(email);
+  return ADMIN_EMAILS.map(e=>e.toLowerCase()).includes(email);
 }
 
 /* ================= UI styles ================= */
-
 function injectStyles() {
   if (document.getElementById("authStyles")) return;
   const s = document.createElement("style");
@@ -62,7 +56,7 @@ function injectStyles() {
     .accMenu{
       position:fixed;
       top:72px; right:14px;
-      width:300px;
+      width:320px;
       padding:10px;
       border-radius:18px;
       background: rgba(255,255,255,.92);
@@ -96,8 +90,7 @@ function injectStyles() {
   document.head.appendChild(s);
 }
 
-/* ================= UI helpers ================= */
-
+/* ================= Helpers ================= */
 let btnAccount = null;
 let chip = null;
 
@@ -138,6 +131,15 @@ function ensureMenu() {
       </div>
       <div>→</div>
     </div>
+
+    <div class="accMenu__row" id="goLocations">
+      <div>
+        <div class="accMenu__title">локации</div>
+        <div class="accMenu__muted">мир и приключения</div>
+      </div>
+      <div>→</div>
+    </div>
+
     <div class="accMenu__row" id="goAdmin" style="display:none;">
       <div>
         <div class="accMenu__title">админ</div>
@@ -145,37 +147,16 @@ function ensureMenu() {
       </div>
       <div>→</div>
     </div>
+
     <button class="accMenu__btn" id="logoutBtn">выйти</button>
   `;
   document.body.appendChild(menu);
-
   return menu;
 }
 
-/* ================= Auth logic ================= */
-
-async function loginPopup() {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-  return signInWithPopup(auth, provider);
-}
-
-// fallback если popup режется браузером
-async function loginRedirect() {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-  return signInWithRedirect(auth, provider);
-}
-
-async function logout() {
-  await signOut(auth);
-  location.hash = "#/";
-}
-
 async function upsertUser(user) {
-  const ref = doc(db, "users", user.uid);
   await setDoc(
-    ref,
+    doc(db, "users", user.uid),
     {
       uid: user.uid,
       email: user.email || null,
@@ -187,55 +168,7 @@ async function upsertUser(user) {
   );
 }
 
-/* ================= State rendering ================= */
-
-function setLoggedOut() {
-  btnAccount.style.display = "";
-  chip?.remove();
-  chip = null;
-
-  window.APP_USER = null;
-  window.APP_IS_ADMIN = false;
-}
-
-function setLoggedIn(user) {
-  btnAccount.style.display = "none";
-
-  if (!chip) {
-    chip = createChip();
-    document.querySelector(".topbar__right")?.prepend(chip);
-    chip.addEventListener("click", () =>
-      ensureMenu().classList.toggle("is-open")
-    );
-  }
-
-  chip.querySelector("#accName").textContent = user.displayName || "аккаунт";
-  chip.querySelector("#accAva").innerHTML = user.photoURL
-    ? `<img src="${user.photoURL}">`
-    : "🙂";
-
-  const menu = ensureMenu();
-  menu.querySelector("#goNotebook").onclick = () => {
-    menu.classList.remove("is-open");
-    location.hash = "#/notebook";
-  };
-
-  const isAdmin = isAdminUser(user);
-  const goAdmin = menu.querySelector("#goAdmin");
-  goAdmin.style.display = isAdmin ? "" : "none";
-  goAdmin.onclick = () => {
-    menu.classList.remove("is-open");
-    location.hash = "#/admin";
-  };
-
-  menu.querySelector("#logoutBtn").onclick = logout;
-
-  window.APP_USER = user;
-  window.APP_IS_ADMIN = isAdmin;
-}
-
 /* ================= Login overlay ================= */
-
 function mountLoginOverlay() {
   function render() {
     const hash = location.hash || "#/";
@@ -272,12 +205,8 @@ function mountLoginOverlay() {
             <button class="btn ghost" id="loginGooglePopup">через popup</button>
             <button class="btn" id="loginGoogle">войти через Google</button>
           </div>
-          <div style="opacity:.55; font-size:12px; margin-top:10px; line-height:1.35;">
-            Если после выбора аккаунта “ничего не происходит” — нажми “через popup” или перезагрузи страницу.
-          </div>
         </div>
       `;
-
       document.body.appendChild(overlay);
 
       overlay.addEventListener("click", (e) => {
@@ -288,8 +217,9 @@ function mountLoginOverlay() {
 
       overlay.querySelector("#loginGoogle").onclick = async () => {
         try {
-          // redirect наиболее стабильный
-          await loginRedirect();
+          const provider = new GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: "select_account" });
+          await signInWithRedirect(auth, provider);
         } catch (e) {
           console.error("AUTH ERROR (redirect):", e);
           alert(`${e?.code || ""}\n${e?.message || e}`);
@@ -298,8 +228,9 @@ function mountLoginOverlay() {
 
       overlay.querySelector("#loginGooglePopup").onclick = async () => {
         try {
-          await loginPopup();
-          // важно: даже если дальше роутер не успеет — onAuthStateChanged дожмёт
+          const provider = new GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: "select_account" });
+          await signInWithPopup(auth, provider);
           location.hash = "#/notebook";
         } catch (e) {
           console.error("AUTH ERROR (popup):", e);
@@ -316,36 +247,65 @@ function mountLoginOverlay() {
 }
 
 /* ================= Init ================= */
-
 injectStyles();
 ensureLoginButton();
 
 btnAccount.onclick = () => (location.hash = "#/login");
 
-// важно: обработать redirect возврат (иначе “успешно вошёл, но не видно”)
-getRedirectResult(auth).catch((e) => {
-  // не показываем alert, просто логируем — чтобы не бесить
-  console.warn("getRedirectResult:", e?.code, e?.message);
-});
+// Handle redirect callback (silent)
+getRedirectResult(auth).catch(() => {});
 
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    try { await upsertUser(user); } catch (e) { console.warn(e); }
-    setLoggedIn(user);
+  ensureLoginButton();
 
-    // ✅ КЛЮЧЕВОЕ: если мы на экране логина — переводим в кабинет
-    const h = location.hash || "#/";
-    if (h === "#/login" || h === "#/") {
-      location.hash = "#/notebook";
-    }
-  } else {
-    setLoggedOut();
+  if (!user) {
+    // logged out
+    btnAccount.style.display = "";
+    chip?.remove();
+    chip = null;
+    window.APP_USER = null;
+    window.APP_IS_ADMIN = false;
+    return;
+  }
+
+  try { await upsertUser(user); } catch (e) { console.warn(e); }
+
+  // logged in
+  btnAccount.style.display = "none";
+  window.APP_USER = user;
+  window.APP_IS_ADMIN = isAdminUser(user);
+
+  if (!chip) {
+    chip = createChip();
+    document.querySelector(".topbar__right")?.prepend(chip);
+    chip.addEventListener("click", () => ensureMenu().classList.toggle("is-open"));
+  }
+
+  chip.querySelector("#accName").textContent = user.displayName || "аккаунт";
+  chip.querySelector("#accAva").innerHTML = user.photoURL ? `<img src="${user.photoURL}">` : "🙂";
+
+  const menu = ensureMenu();
+  menu.querySelector("#goNotebook").onclick = () => { menu.classList.remove("is-open"); location.hash = "#/notebook"; };
+  menu.querySelector("#goLocations").onclick = () => { menu.classList.remove("is-open"); location.hash = "#/locations"; };
+
+  const goAdmin = menu.querySelector("#goAdmin");
+  goAdmin.style.display = window.APP_IS_ADMIN ? "" : "none";
+  goAdmin.onclick = () => { menu.classList.remove("is-open"); location.hash = "#/admin"; };
+
+  menu.querySelector("#logoutBtn").onclick = async () => {
+    await signOut(auth);
+    location.hash = "#/";
+  };
+
+  // Auto-leave login screen
+  const h = location.hash || "#/";
+  if (h === "#/login" || h === "#/") {
+    location.hash = "#/notebook";
   }
 });
 
 mountLoginOverlay();
 
-/* ================= Guard helper ================= */
 export function requireAuth() {
   if (auth.currentUser) return true;
   location.hash = "#/login";
