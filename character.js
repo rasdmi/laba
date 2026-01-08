@@ -1,276 +1,193 @@
 // character.js
-import { auth, db, storage } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import { requireAuth } from "./auth.js";
-import { doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-import { ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+import {
+  doc,
+  getDoc,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, (m)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+}
 
-let activeChar = null;
-let unsubPages = null;
-let unsubComments = null;
+/* ================= ROUTE ================= */
 
-function ensureCharacterUI(){
-  const rightBody = document.getElementById("nbRightBody");
-  if (!rightBody || document.getElementById("charUI")) return;
+function parseRoute(){
+  const h = location.hash || "";
+  if (h.startsWith("#/character/")){
+    return {
+      mode: "user",
+      uid: auth.currentUser?.uid,
+      charId: h.split("/")[2]
+    };
+  }
+  if (h.startsWith("#/admin/character/")){
+    const p = h.split("/");
+    return {
+      mode: "admin",
+      uid: p[3],
+      charId: p[4]
+    };
+  }
+  return null;
+}
 
-  const wrap = document.createElement("div");
-  wrap.id = "charUI";
-  wrap.innerHTML = `
-    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-      <button class="nbBtnMini" id="charAddNote" type="button">+ заметка</button>
-      <button class="nbBtnMini" id="charAddFile" type="button">+ файл</button>
-      <button class="nbBtnMini" id="charAddDrawing" type="button">+ рисунок</button>
-    </div>
+/* ================= UI ================= */
 
-    <div id="charComposer" style="display:none; margin-bottom:12px;"></div>
+function ensureUI(){
+  let el = document.getElementById("charOverlay");
+  if (el) return el;
 
-    <div style="font-family:'Vasek',ui-sans-serif; font-size:14px; opacity:.85; margin: 10px 0 8px;">Страницы</div>
-    <div id="charPages" style="display:flex; flex-direction:column; gap:10px;"></div>
-
-    <div id="charPageModal" style="display:none;"></div>
+  el = document.createElement("div");
+  el.id = "charOverlay";
+  el.style.cssText = `
+    position:fixed; inset:64px 12px 12px 12px;
+    z-index:60;
+    border-radius:26px;
+    background:rgba(255,255,255,.8);
+    border:1px solid rgba(23,23,23,.12);
+    box-shadow:0 24px 80px rgba(0,0,0,.12);
+    backdrop-filter: blur(10px);
+    display:none;
+    overflow:hidden;
   `;
-  rightBody.innerHTML = "";
-  rightBody.appendChild(wrap);
 
-  const modal = document.getElementById("charPageModal");
-  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.22);display:none;align-items:center;justify-content:center;z-index:90;";
-  modal.addEventListener("click", (e)=>{ if (e.target===modal) modal.style.display="none"; });
-
-  document.getElementById("charAddNote").onclick = ()=> showComposer("note");
-  document.getElementById("charAddFile").onclick = ()=> showComposer("file");
-  document.getElementById("charAddDrawing").onclick = ()=> {
-    if (typeof window.openDrawing === "function") window.openDrawing();
-    else alert("drawing.js не загрузился");
-  };
-
-  function showComposer(type){
-    const c = document.getElementById("charComposer");
-    c.style.display = "";
-    if (type === "note"){
-      c.innerHTML = `
-        <div class="nbForm">
-          <input class="nbInput" id="noteTitle" placeholder="Заголовок заметки" />
-          <textarea class="nbTextarea" id="noteText" placeholder="Текст..."></textarea>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="nbBtnMini" id="noteSave" type="button">сохранить</button>
-            <button class="nbBtnMini" id="noteCancel" type="button">отмена</button>
-          </div>
-        </div>
-      `;
-      document.getElementById("noteCancel").onclick = ()=> (c.style.display="none");
-      document.getElementById("noteSave").onclick = ()=> saveNote();
-    } else {
-      c.innerHTML = `
-        <div class="nbForm">
-          <input class="nbInput" id="fileTitle" placeholder="Название файла (необязательно)" />
-          <input class="nbInput" id="fileInput" type="file" />
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="nbBtnMini" id="fileSave" type="button">загрузить</button>
-            <button class="nbBtnMini" id="fileCancel" type="button">отмена</button>
-          </div>
-        </div>
-      `;
-      document.getElementById("fileCancel").onclick = ()=> (c.style.display="none");
-      document.getElementById("fileSave").onclick = ()=> uploadFile();
-    }
-  }
-}
-
-async function loadCharacter(charId){
-  const uid = auth.currentUser?.uid;
-  if (!uid) return;
-
-  const ref = doc(db, "users", uid, "characters", charId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()){
-    document.getElementById("nbRightTitle").textContent = "Не найдено";
-    document.getElementById("nbRightMuted").textContent = "";
-    return;
-  }
-
-  activeChar = { id: charId, ...snap.data() };
-  document.getElementById("nbRightTitle").textContent = activeChar.name || "Персонаж";
-  document.getElementById("nbRightMuted").textContent = activeChar.about || "";
-
-  ensureCharacterUI();
-  mountPages();
-}
-
-function mountPages(){
-  const uid = auth.currentUser?.uid;
-  if (!uid || !activeChar) return;
-
-  unsubPages?.();
-  const pagesEl = document.getElementById("charPages");
-  pagesEl.innerHTML = "";
-
-  const q = query(collection(db, "users", uid, "characters", activeChar.id, "pages"), orderBy("createdAt", "desc"));
-  unsubPages = onSnapshot(q, (snap) => {
-    pagesEl.innerHTML = "";
-    if (snap.empty){
-      const empty = document.createElement("div");
-      empty.style.cssText = "opacity:.6; font-size:13px; line-height:1.45;";
-      empty.textContent = "Пока нет страниц. Добавьте заметку/файл/рисунок.";
-      pagesEl.appendChild(empty);
-      return;
-    }
-
-    snap.forEach((docSnap) => {
-      const p = docSnap.data();
-      const card = document.createElement("div");
-      card.className = "charItem";
-      const subtitle = p.type === "file" ? "файл" : p.type === "drawing" ? "рисунок" : "заметка";
-      card.innerHTML = `
-        <div class="charName">${escapeHtml(p.title || subtitle)}</div>
-        <div class="charAbout">${escapeHtml(p.type==="note" ? (p.text||"").slice(0,140) : p.type==="file" ? (p.originalName||"") : "Открыть")}</div>
-      `;
-      card.onclick = ()=> openPageModal(docSnap.id, p);
-      pagesEl.appendChild(card);
-    });
-  });
-}
-
-async function saveNote(){
-  const uid = auth.currentUser?.uid;
-  if (!uid || !activeChar) return;
-
-  const title = document.getElementById("noteTitle").value.trim() || "Заметка";
-  const text = document.getElementById("noteText").value.trim();
-
-  await addDoc(collection(db, "users", uid, "characters", activeChar.id, "pages"), { type:"note", title, text, createdAt: serverTimestamp() });
-  document.getElementById("charComposer").style.display = "none";
-}
-
-async function uploadFile(){
-  const uid = auth.currentUser?.uid;
-  if (!uid || !activeChar) return;
-
-  const input = document.getElementById("fileInput");
-  const file = input.files?.[0];
-  if (!file){ alert("Выберите файл"); return; }
-
-  const title = document.getElementById("fileTitle").value.trim() || "Файл";
-  const safeName = (file.name || "file").replace(/[^a-zA-Z0-9._-]+/g, "_");
-  const path = `users/${uid}/characters/${activeChar.id}/files/${Date.now()}_${safeName}`;
-  const storageRef = sRef(storage, path);
-
-  await uploadBytes(storageRef, file);
-  const url = await getDownloadURL(storageRef);
-
-  await addDoc(collection(db, "users", uid, "characters", activeChar.id, "pages"), {
-    type:"file", title, originalName:file.name, storagePath:path, url, createdAt: serverTimestamp()
-  });
-
-  document.getElementById("charComposer").style.display = "none";
-}
-
-async function openPageModal(pageId, page){
-  const modal = document.getElementById("charPageModal");
-  modal.style.display = "flex";
-
-  const inner = document.createElement("div");
-  inner.style.cssText = "width:min(820px,calc(100vw - 28px));max-height:calc(100vh - 28px);overflow:auto;border-radius:26px;background:rgba(255,255,255,.94);border:1px solid rgba(23,23,23,.18);box-shadow:0 18px 50px rgba(0,0,0,.14);padding:14px;font-family:ui-sans-serif,system-ui;";
-
-  let body = "";
-  if (page.type==="note"){
-    body = `<div style="margin-top:10px;white-space:pre-wrap;line-height:1.5;">${escapeHtml(page.text||"")}</div>`;
-  } else if (page.type==="file"){
-    body = `<div style="margin-top:10px;"><div style="opacity:.7;margin-bottom:8px;">${escapeHtml(page.originalName||"")}</div><a href="${page.url}" target="_blank" rel="noreferrer">Открыть файл ↗</a></div>`;
-  } else {
-    body = `<div style="margin-top:10px;"><img src="${page.url}" alt="" style="max-width:100%;border-radius:18px;border:1px solid rgba(23,23,23,.12);" /></div>`;
-  }
-
-  body += `
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(23,23,23,.10);">
-      <div style="font-family:'Vasek',ui-sans-serif;font-size:14px;opacity:.85;">Комментарии</div>
-      <div id="cmList" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <input id="cmInput" placeholder="Написать комментарий..." style="flex:1;padding:10px 12px;border-radius:14px;border:1px solid rgba(23,23,23,.14);background:rgba(255,255,255,.92);" />
-        <button id="cmSend" class="nbBtnMini" type="button">отправить</button>
+  el.innerHTML = `
+    <div style="display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid rgba(23,23,23,.08);">
+      <div>
+        <div id="charTitle" style="font-family:'Vasek',ui-sans-serif; font-size:20px;">Персонаж</div>
+        <div id="charSubtitle" style="opacity:.6; font-size:12px;"></div>
       </div>
+
+      <button id="charCopyCode" style="margin-left:auto;">код</button>
+      <button id="charClose">✕</button>
+    </div>
+
+    <div style="display:grid; grid-template-columns:260px 1fr; height:100%;">
+      <aside id="pageList" style="border-right:1px solid rgba(23,23,23,.08); padding:12px; overflow:auto;"></aside>
+      <main id="pageBody" style="padding:16px; overflow:auto;">
+        <div style="opacity:.6;">Выберите страницу</div>
+      </main>
     </div>
   `;
 
-  inner.innerHTML = `
-    <div style="display:flex;align-items:flex-start;gap:10px;">
-      <div style="font-family:'Vasek',ui-sans-serif;font-size:18px;">${escapeHtml(page.title || "страница")}</div>
-      <button id="closePageModal" style="margin-left:auto;border:0;background:transparent;cursor:pointer;font-size:16px;opacity:.7;">✕</button>
-    </div>
-    ${body}
-  `;
+  document.body.appendChild(el);
 
-  modal.innerHTML = "";
-  modal.appendChild(inner);
-  inner.querySelector("#closePageModal").onclick = ()=> (modal.style.display="none");
+  el.querySelector("#charClose").onclick = () => location.hash = "#/notebook";
 
-  mountComments(pageId);
-
-  inner.querySelector("#cmSend").onclick = async ()=>{
-    const t = inner.querySelector("#cmInput").value.trim();
-    if (!t) return;
-    await addComment(pageId, t);
-    inner.querySelector("#cmInput").value = "";
-  };
+  return el;
 }
 
-function mountComments(pageId){
-  const uid = auth.currentUser?.uid;
-  if (!uid || !activeChar) return;
+/* ================= LOGIC ================= */
 
-  unsubComments?.();
-  const list = document.getElementById("cmList");
-  list.innerHTML = "";
+let unsubPages = null;
 
-  const q = query(collection(db, "users", uid, "characters", activeChar.id, "comments"), orderBy("createdAt", "desc"));
-  unsubComments = onSnapshot(q, (snap) => {
-    list.innerHTML = "";
-    const items = [];
-    snap.forEach((d)=>{ const c=d.data(); if (c.pageId===pageId) items.push(c); });
-
-    if (items.length===0){
-      const empty=document.createElement("div");
-      empty.style.cssText="opacity:.6;font-size:13px;";
-      empty.textContent="Комментариев пока нет.";
-      list.appendChild(empty);
-      return;
-    }
-    items.forEach((c)=>{
-      const row=document.createElement("div");
-      row.style.cssText="padding:10px 12px;border-radius:14px;border:1px solid rgba(23,23,23,.10);background:rgba(255,255,255,.70);";
-      row.innerHTML=`<div style="font-family:'Vasek',ui-sans-serif;font-size:13px;opacity:.85;">${escapeHtml(c.authorName||"участник")}</div><div style="margin-top:4px;line-height:1.45;">${escapeHtml(c.text||"")}</div>`;
-      list.appendChild(row);
-    });
-  });
-}
-
-async function addComment(pageId, text){
-  const uid = auth.currentUser?.uid;
-  if (!uid || !activeChar) return;
-
-  await addDoc(collection(db, "users", uid, "characters", activeChar.id, "comments"), {
-    pageId, text,
-    authorName: auth.currentUser?.displayName || "участник",
-    createdAt: serverTimestamp()
-  });
-}
-
-window.__CHAR_CTX__ = {
-  get active(){ return activeChar; },
-  async addDrawingPage(title, url, storagePath){
-    const uid = auth.currentUser?.uid;
-    if (!uid || !activeChar) return;
-    await addDoc(collection(db, "users", uid, "characters", activeChar.id, "pages"), { type:"drawing", title: title||"Рисунок", url, storagePath, createdAt: serverTimestamp() });
-  }
-};
-
-async function route(){
-  const hash = location.hash || "#/";
-  if (!hash.startsWith("#/character/")) return;
+function openCharacter(){
   if (!requireAuth()) return;
 
-  const charId = hash.split("/")[2];
-  if (charId) await loadCharacter(charId);
+  const route = parseRoute();
+  if (!route || !route.uid || !route.charId) return;
+
+  const { uid, charId, mode } = route;
+  const wrap = ensureUI();
+  wrap.style.display = "block";
+
+  // загружаем персонажа
+  getDoc(doc(db, "users", uid, "characters", charId)).then(snap=>{
+    if (!snap.exists()) return;
+    const c = snap.data();
+    wrap.querySelector("#charTitle").textContent = c.name || "Персонаж";
+    wrap.querySelector("#charSubtitle").textContent =
+      mode === "admin" ? "режим мастера" : "моя тетрадка";
+  });
+
+  // код персонажа
+  wrap.querySelector("#charCopyCode").onclick = () => {
+    const code = `${uid}:${charId}`;
+    navigator.clipboard.writeText(code);
+    alert("Код персонажа скопирован:\n" + code);
+  };
+
+  // страницы
+  const list = wrap.querySelector("#pageList");
+  const body = wrap.querySelector("#pageBody");
+
+  if (unsubPages) unsubPages();
+  unsubPages = onSnapshot(
+    query(
+      collection(db, "users", uid, "characters", charId, "pages"),
+      orderBy("createdAt","asc")
+    ),
+    snap=>{
+      list.innerHTML = "";
+
+      // кнопка добавления
+      const addBtn = document.createElement("button");
+      addBtn.textContent = mode === "admin" ? "+ страница от мастера" : "+ моя страница";
+      addBtn.onclick = async () => {
+        const title = prompt("Название страницы");
+        if (!title) return;
+        await addDoc(
+          collection(db,"users",uid,"characters",charId,"pages"),
+          {
+            title,
+            body:"",
+            origin: mode === "admin" ? "admin" : "user",
+            createdAt: serverTimestamp()
+          }
+        );
+      };
+      list.appendChild(addBtn);
+
+      snap.forEach(d=>{
+        const p = d.data();
+        const item = document.createElement("div");
+        item.style.cssText = "margin-top:8px; padding:8px; cursor:pointer; border-radius:10px;";
+        item.innerHTML = `
+          <div>${escapeHtml(p.title||"")}</div>
+          <div style="opacity:.5; font-size:11px;">${p.origin}</div>
+        `;
+        item.onclick = ()=>{
+          body.innerHTML = `
+            <h3>${escapeHtml(p.title)}</h3>
+            <textarea id="pageEdit" style="width:100%; min-height:240px;">${escapeHtml(p.body||"")}</textarea>
+            <button id="pageSave">сохранить</button>
+          `;
+          body.querySelector("#pageSave").onclick = async ()=>{
+            await addDoc; // placeholder, MVP
+            await doc(db,"users",uid,"characters",charId,"pages",d.id)
+            await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js")
+              .then(({updateDoc})=>updateDoc(
+                doc(db,"users",uid,"characters",charId,"pages",d.id),
+                { body: body.querySelector("#pageEdit").value }
+              ));
+          };
+        };
+        list.appendChild(item);
+      });
+    }
+  );
+}
+
+function closeCharacter(){
+  document.getElementById("charOverlay")?.style.display="none";
+}
+
+function route(){
+  const h = location.hash || "";
+  if (h.startsWith("#/character/") || h.startsWith("#/admin/character/")){
+    openCharacter();
+  } else {
+    closeCharacter();
+  }
 }
 
 window.addEventListener("hashchange", route);
