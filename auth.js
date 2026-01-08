@@ -230,19 +230,14 @@ btnAccount.onclick = () => (location.hash = "#/login");
 getRedirectResult(auth).catch((e)=> console.warn("[auth] redirect result error", e));
 
 onAuthStateChanged(auth, async (user) => {
-  if (user){
-    try{ await upsertUser(user); } catch(e){ console.warn(e); }
+  if (user) {
+    await upsertUser(user);
     setLoggedIn(user);
-
-    // ✅ ВАЖНО: если мы на экране логина — уходим в тетрадку
-    if ((location.hash || "#/") === "#/login") {
-      location.hash = "#/notebook";
-    }
+    if (location.hash === "#/login") location.hash = "#/notebook";
   } else {
     setLoggedOut();
   }
 });
-
 
 mountLoginOverlay();
 

@@ -1,7 +1,8 @@
 /* style.css */
 @font-face{
   font-family: "Vasek";
-  src: url("media/Vasek Italic_0.ttf") format("truetype");
+  src: url("media/Vasek-Italic_0.ttf") format("truetype");
+  font-display: swap;
   font-style: italic;
   font-weight: 400;
 }
@@ -20,6 +21,25 @@
   --c2:#ff7aa2; /* pink */
   --c3:#f4a640; /* orange */
   --c4:#5dbb8a; /* green */
+}
+
+
+/* type scale */
+:root{
+  --fs-0: clamp(16px, 0.7vw + 13px, 20px);
+  --fs-1: clamp(18px, 0.9vw + 14px, 24px);
+  --fs-2: clamp(22px, 1.3vw + 15px, 30px);
+  --fs-3: clamp(28px, 2.1vw + 16px, 40px);
+}
+html{ font-size: var(--fs-0); }
+body{
+  margin:0;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, "Noto Sans", sans-serif;
+  font-size: 1rem;
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
 }
 
 *{ box-sizing:border-box; }
@@ -52,7 +72,7 @@ body{
 }
 .brand__title{
   font-family:"Vasek", ui-sans-serif;
-  font-size:20px;
+  font-size: var(--fs-1);
   letter-spacing:.2px;
 }
 .brand__sub{
@@ -90,14 +110,14 @@ body{
 
 .topbar__right{ margin-left:auto; display:flex; gap:10px; }
 
-.btn{
+\.btn{
   border:1px solid rgba(23,23,23,.18);
   background: rgba(255,255,255,.78);
   padding:10px 12px;
   border-radius:12px;
   cursor:pointer;
   font-family:"Vasek", ui-sans-serif;
-  font-size:14px;
+  font-size: 1rem;
   transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
   box-shadow: 0 8px 18px rgba(0,0,0,.06);
 }
