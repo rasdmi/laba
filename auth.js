@@ -18,7 +18,7 @@ import {
 /* ================= ADMIN ================= */
 
 export const ADMIN_EMAILS = [
-  "rastadmi@gmail.com", // ← замени на свой gmail
+  "rastadmi@gmail.com",
 ];
 
 export function isAdminUser(user) {
