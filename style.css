@@ -1,138 +1,341 @@
-/* style.css */
 @font-face{
-  font-family: "Vasek";
-  src: url("./media/Vasek Italic_0.ttf") format("truetype");
+  font-family:"Vasek";
+  src:url("./media/Vasek Italic_0.ttf") format("truetype");
   font-display: swap;
 }
+
 :root{
-  --bg:#fbfbf6;
-  --ink:rgba(23,23,23,.92);
-  --muted:rgba(23,23,23,.62);
-  --line:rgba(23,23,23,.12);
-  --card:rgba(255,255,255,.78);
-  --blur:blur(10px);
-  --r:22px;
+  --seal: #502503;
+  --choco:#773D03;
+  --gamboge:#D6A10E;
+  --gas:#FBDA4B;
+  --shandy:#FAE36F;
+
+  --radius: 28px;
+  --shadow: 0 28px 90px rgba(0,0,0,.35);
+  --blur: blur(10px);
 }
-html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui}
-.bgGrid{
-  position:fixed;inset:0;pointer-events:none;opacity:.55;
-  background-image:
-    linear-gradient(to right, rgba(23,23,23,.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(23,23,23,.06) 1px, transparent 1px);
-  background-size:34px 34px;
-  mask-image:radial-gradient(circle at 50% 20%, rgba(0,0,0,1), rgba(0,0,0,.15), rgba(0,0,0,0));
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background: #101012;
+  color: rgba(255,255,255,.92);
+  font-family: ui-sans-serif, system-ui;
+  line-height:1.35;
 }
-.topbar{
-  position:sticky;top:0;z-index:10;
-  display:flex;align-items:center;gap:12px;
-  padding:10px 14px;
-  background:rgba(255,255,255,.72);
-  border-bottom:1px solid var(--line);
-  backdrop-filter:var(--blur);
-}
-.brand{font-family:"Vasek",ui-sans-serif;font-size:18px;white-space:nowrap}
-.spacer{flex:1}
-.pill{
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.78);
-  border-radius:999px;
-  padding:8px 10px;
-  display:flex;gap:8px;align-items:center;
-  font-size:12px;color:var(--muted);
-}
-.btn{
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.78);
-  border-radius:14px;
-  padding:9px 11px;
-  font-family:"Vasek",ui-sans-serif;
-  cursor:pointer;
-}
-.btn.ghost{background:rgba(255,255,255,.58)}
-.wrap{max-width:1180px;margin:0 auto;padding:18px 14px 60px}
-.view{display:none}
-.view.is-active{display:block}
 
 .hero{
-  border-radius:28px;border:1px solid var(--line);
-  background:rgba(255,255,255,.76);
-  box-shadow:0 24px 80px rgba(0,0,0,.08);
-  backdrop-filter:var(--blur);
-  padding:18px;
+  position: relative;
+  min-height: 100vh;
+  overflow:hidden;
 }
-.hTitle{font-family:"Vasek";font-size:clamp(22px,2.4vw,34px);line-height:1.1}
-.hSub{margin-top:8px;color:var(--muted);line-height:1.5;max-width:860px;font-size:14px}
-.actions{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap}
 
-.boardShell{margin-top:18px;display:grid;gap:12px}
-.cabTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.cabTitle{font-family:"Vasek";font-size:20px}
-.smallMuted{color:var(--muted);font-size:12px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.card{border-radius:var(--r);border:1px solid var(--line);background:var(--card);backdrop-filter:var(--blur);padding:12px}
-.label{font-size:12px;color:var(--muted);margin-bottom:6px}
-.field{
-  width:100%;padding:10px 12px;border-radius:14px;
-  border:1px solid rgba(23,23,23,.14);
-  background:rgba(255,255,255,.86);
-  outline:none;font-size:14px
+.heroBg{
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(180deg, rgba(16,16,18,.72), rgba(16,16,18,.35) 35%, rgba(16,16,18,.84)),
+    url("./media/bg-tree.png");
+  background-size: cover;
+  background-position: center;
+  filter: saturate(1.05) contrast(1.05);
+  transform: scale(1.03);
 }
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 
-.board{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:420px}
-.col{
-  border-radius:26px;border:1px dashed rgba(23,23,23,.18);
-  background:rgba(255,255,255,.62);
-  padding:12px;min-height:420px;position:relative;
+.heroGrid{
+  position:absolute; inset:-20%;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.07) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity:.33;
+  transform: rotate(-2deg);
+  pointer-events:none;
 }
-.col.is-over{outline:2px solid rgba(23,23,23,.18)}
-.colHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-.colTitle{font-family:"Vasek";font-size:16px}
 
-.bCard{
-  border-radius:18px;border:1px solid rgba(23,23,23,.12);
-  background:rgba(255,255,255,.78);
-  box-shadow:0 14px 40px rgba(0,0,0,.08);
-  padding:10px;margin-bottom:10px;
+.heroGlow{
+  position:absolute; inset:0;
+  background:
+    radial-gradient(900px 520px at 20% 20%, rgba(251,218,75,.20), transparent 60%),
+    radial-gradient(900px 520px at 85% 35%, rgba(214,161,14,.16), transparent 55%),
+    radial-gradient(900px 520px at 50% 80%, rgba(119,61,3,.22), transparent 60%);
+  pointer-events:none;
 }
-.bCard.dragging{opacity:.6}
-.bCardTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.bCardTitle{font-family:"Vasek";font-size:15px;line-height:1.15;outline:none}
-.iconBtn{
-  border:1px solid rgba(23,23,23,.12);
-  background:rgba(255,255,255,.70);
-  border-radius:12px;
-  padding:6px 8px;
-  cursor:pointer;
+
+.topbar{
+  position: sticky;
+  top:0;
+  z-index: 20;
+  backdrop-filter: var(--blur);
+  background: rgba(16,16,18,.55);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+}
+
+.nav{
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 10px 14px;
+  display:flex;
+  align-items:center;
+  gap: 12px;
+}
+
+.brand{
+  display:flex;
+  flex-direction:column;
+  gap: 2px;
+}
+.brand b{
+  font-family:"Vasek", ui-sans-serif;
+  font-size: 20px;
+  letter-spacing: .3px;
+}
+.brand span{
+  font-size: 12px;
+  color: rgba(255,255,255,.75);
+}
+
+.spacer{ flex:1; }
+
+.navLinks{ display:flex; gap: 10px; align-items:center; flex-wrap:wrap; }
+.navLinks a{
+  text-decoration:none;
   font-family:"Vasek";
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  padding: 9px 12px;
+  border-radius: 14px;
+  transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+  white-space:nowrap;
 }
-.bCardPreview{margin-top:10px}
-.cardPreviewImg,.cardPreviewVid{
-  width:100%;border-radius:14px;border:1px solid rgba(23,23,23,.10);display:block
+.navLinks a:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.10);
+  box-shadow: 0 18px 45px rgba(0,0,0,.25);
 }
-.cardFrame{border-radius:14px;overflow:hidden;border:1px solid rgba(23,23,23,.10)}
-.cardFrame iframe{width:100%;height:220px;border:0;display:block}
-.cardLink{display:inline-block;margin-top:8px;color:var(--ink)}
-.bCardMeta{margin-top:8px;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
-.muted.mini{font-size:11px}
-.bCardNote{margin-top:10px}
-.bNote{
-  margin-top:6px;border-radius:14px;border:1px solid rgba(23,23,23,.10);
-  background:rgba(255,255,255,.74);
-  padding:10px 12px;min-height:44px;outline:none;font-size:13px;line-height:1.4
+.navLinks a.primary{
+  border-color: rgba(251,218,75,.45);
+  background: rgba(251,218,75,.10);
 }
-.empty{color:var(--muted);padding:10px;font-size:13px}
 
-/* modal */
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:40;background:rgba(0,0,0,.25);backdrop-filter:blur(4px)}
-.modal.is-open{display:flex}
-.modalCard{width:min(720px,calc(100vw - 24px));border-radius:26px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.88);padding:14px}
-.modalH{font-family:"Vasek";font-size:18px}
-.modalGrid{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shell{
+  position:relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px 14px 84px;
+}
 
-@media (max-width:900px){
-  .board{grid-template-columns:1fr}
-  .modalGrid{grid-template-columns:1fr}
-  .grid2{grid-template-columns:1fr}
+.kicker{
+  display:flex;
+  gap: 8px;
+  flex-wrap:wrap;
+  margin-top: 18px;
+}
+.badge{
+  font-size: 12px;
+  color: rgba(16,16,18,.88);
+  background: rgba(255,255,255,.84);
+  border: 1px solid rgba(255,255,255,.35);
+  padding: 7px 10px;
+  border-radius: 999px;
+}
+
+.hTitle{
+  margin-top: 12px;
+  font-family:"Vasek";
+  font-size: clamp(44px, 5.2vw, 78px);
+  line-height: 0.98;
+  letter-spacing: .4px;
+  text-shadow: 0 20px 70px rgba(0,0,0,.55);
+}
+.hSub{
+  margin-top: 6px;
+  font-family:"Vasek";
+  font-size: clamp(22px, 2.4vw, 34px);
+  opacity: .92;
+}
+.hLead{
+  margin-top: 14px;
+  font-size: 16px;
+  max-width: 72ch;
+  color: rgba(255,255,255,.82);
+}
+
+.ctas{
+  margin-top: 16px;
+  display:flex;
+  gap: 10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.btn{
+  font-family:"Vasek";
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.95);
+  padding: 11px 14px;
+  border-radius: 16px;
+  cursor:pointer;
+  text-decoration:none;
+  transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+}
+.btn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.12);
+  box-shadow: 0 20px 60px rgba(0,0,0,.28);
+}
+.btn.primary{
+  border-color: rgba(251,218,75,.55);
+  background: rgba(251,218,75,.16);
+}
+.btn.primary:hover{ background: rgba(251,218,75,.22); }
+
+.heroCardRow{
+  margin-top: 18px;
+  display:grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 12px;
+  align-items:stretch;
+}
+.card{
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(16,16,18,.44);
+  backdrop-filter: var(--blur);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+}
+.cardPad{ padding: 16px; }
+
+.h2{
+  font-family:"Vasek";
+  font-size: 26px;
+  letter-spacing:.2px;
+}
+.p{
+  margin-top: 8px;
+  color: rgba(255,255,255,.76);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.toolsGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+.tool{
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  padding: 12px;
+}
+.tool b{
+  font-family:"Vasek";
+  font-weight: 400;
+  letter-spacing:.2px;
+  font-size: 16px;
+}
+.tool span{
+  display:block;
+  margin-top: 6px;
+  color: rgba(255,255,255,.74);
+  font-size: 12px;
+  line-height:1.4;
+}
+
+.section{ margin-top: 14px; }
+
+.mapWrap{ position: relative; padding: 16px; }
+.mapHead{
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+
+.mapGrid{
+  margin-top: 12px;
+  display:grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.step{
+  position: relative;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  padding: 12px;
+  min-height: 150px;
+  overflow:hidden;
+}
+.step::after{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background:
+    radial-gradient(240px 160px at 30% 20%, rgba(251,218,75,.22), transparent 60%),
+    radial-gradient(220px 150px at 80% 70%, rgba(214,161,14,.16), transparent 60%);
+  transform: rotate(10deg);
+  opacity:.75;
+  pointer-events:none;
+}
+.step .n{ font-family:"Vasek"; font-size: 18px; opacity:.9; }
+.step .t{ margin-top: 4px; font-family:"Vasek"; font-size: 18px; }
+.step .d{ margin-top: 6px; color: rgba(255,255,255,.74); font-size: 12px; line-height:1.4; }
+
+.connector{
+  position:absolute;
+  left: 16px; right: 16px;
+  top: 56%;
+  height: 2px;
+  background: rgba(255,255,255,.10);
+  z-index: 0;
+}
+
+.startBullets{ margin-top: 10px; display:grid; gap: 8px; }
+.bul{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  padding: 10px 12px;
+  color: rgba(255,255,255,.78);
+  font-size: 13px;
+}
+.bul::before{ content:"✦"; color: var(--gas); margin-right: 8px; }
+
+.footer{
+  margin-top: 14px;
+  padding: 16px;
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  flex-wrap:wrap;
+  color: rgba(255,255,255,.60);
+  font-size: 12px;
+}
+
+/* doodles */
+.doodles{ position:absolute; inset:0; pointer-events:none; }
+.doodle{
+  position:absolute;
+  border-radius: 999px;
+  border: 1px dashed rgba(255,255,255,.35);
+  opacity:.9;
+  filter: drop-shadow(0 20px 50px rgba(0,0,0,.35));
+}
+.d1{ width: 140px; height: 140px; left: -30px; top: 26vh; transform: rotate(-12deg); }
+.d2{ width: 220px; height: 220px; right: -70px; top: 18vh; transform: rotate(8deg); }
+.d3{ width: 160px; height: 160px; left: 12%; bottom: -40px; transform: rotate(16deg); }
+.doodle::after{
+  content:"";
+  position:absolute; inset: 14px;
+  border-radius: 999px;
+  border: 3px solid rgba(251,218,75,.55);
 }

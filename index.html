@@ -1,145 +1,101 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Мастерская оживления идей — Promo + Кабинет</title>
-  <link rel="stylesheet" href="./style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Фабрика детских вселенных — межпространственная мастерская</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./mobile.css" />
 </head>
 <body>
-  <div class="bgGrid"></div>
+  <div class="hero" id="top">
+    <div class="heroBg"></div>
+    <div class="heroGrid"></div>
+    <div class="heroGlow"></div>
 
-  <header class="topbar">
-    <div class="brand">Мастерская оживления идей</div>
-    <div class="spacer"></div>
-
-    <div class="pill">
-      <span>Аккаунт:</span>
-      <b id="userEmail">гость</b>
-    </div>
-
-    <button class="btn ghost" id="homeBtn">главная</button>
-    <button class="btn ghost" id="cabinetBtn" style="display:none;">кабинет</button>
-    <button class="btn" id="loginBtn">войти Google</button>
-    <button class="btn" id="logoutBtn" style="display:none;">выйти</button>
-  </header>
-
-  <main class="wrap">
-    <section class="view is-active" data-view="home">
-      <div class="hero">
-        <div class="hTitle">Оживляем идеи детей: от описания → к визуалу → к миру</div>
-        <div class="hSub">
-          Вы придумываете персонажа/историю, добавляете референсы и комментарии — я собираю образ, делаю визуализации, видео, “окно из игры”, инвентарь, 3D/куклы и т.д.
+    <div class="topbar">
+      <div class="nav">
+        <div class="brand">
+          <b id="brandName">Фабрика детских вселенных</b>
+          <span id="brandSub">межпространственная мастерская</span>
         </div>
-
-        <div class="actions">
-          <button class="btn" id="howStartBtn">как начать</button>
-          <button class="btn ghost" onclick="location.hash='#/cabinet'">в кабинет</button>
+        <div class="spacer"></div>
+        <div class="navLinks">
+          <a href="#map" data-scroll>карта</a>
+          <a href="#tools" data-scroll>инструменты</a>
+          <a class="primary" href="#start" data-scroll>как попасть</a>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section class="view" data-view="cabinet" id="cabinet">
-      <div class="boardShell">
+    <div class="doodles" aria-hidden="true">
+      <div class="doodle d1"></div>
+      <div class="doodle d2"></div>
+      <div class="doodle d3"></div>
+    </div>
 
-        <div class="cabTop">
-          <div>
-            <div class="cabTitle">Личный кабинет: доска “Идеи → Готовое”</div>
-            <div class="smallMuted">Файлы храним в Google Drive (по ссылке), на сайте — ссылки и комментарии.</div>
-          </div>
-          <div class="row">
-            <button class="btn" id="addCardBtn">+ карточка</button>
-          </div>
-        </div>
+    <div class="shell">
+      <div class="kicker" id="badges"></div>
 
+      <div class="hTitle" id="heroTitle"></div>
+      <div class="hSub" id="heroSub"></div>
+      <div class="hLead" id="heroLead"></div>
+
+      <div class="ctas">
+        <a class="btn primary" href="#start" data-scroll id="cta1">Записаться</a>
+        <a class="btn" href="#map" data-scroll id="cta2">Как это работает</a>
+      </div>
+
+      <div class="heroCardRow section">
         <div class="card">
-          <div class="grid2">
-            <div>
-              <div class="label">Моя папка Google Drive — Ideas (куда я загружаю референсы)</div>
-              <input class="field" id="driveIdeas" placeholder="вставь ссылку на папку Ideas">
-              <div class="row" style="margin-top:10px;">
-                <button class="btn ghost" id="openIdeasFolder">открыть</button>
-              </div>
-            </div>
-
-            <div>
-              <div class="label">Моя папка Google Drive — Done (куда мастер кладёт результаты)</div>
-              <input class="field" id="driveDone" placeholder="вставь ссылку на папку Done">
-              <div class="row" style="margin-top:10px;">
-                <button class="btn ghost" id="openDoneFolder">открыть</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:10px; justify-content:flex-end;">
-            <button class="btn" id="saveDriveLinks">Сохранить</button>
+          <div class="cardPad">
+            <div class="h2" id="whatH">Что здесь происходит</div>
+            <div class="p" id="whatP"></div>
           </div>
         </div>
 
-        <div class="board">
-          <div class="col">
-            <div class="colHead">
-              <div class="colTitle">Идеи</div>
-              <div class="smallMuted">референсы, пожелания, вводные</div>
-            </div>
-            <div id="colIdeas"></div>
-          </div>
-
-          <div class="col">
-            <div class="colHead">
-              <div class="colTitle">Готовое</div>
-              <div class="smallMuted">результаты от мастера</div>
-            </div>
-            <div id="colDone"></div>
+        <div class="card" id="tools">
+          <div class="cardPad">
+            <div class="h2" id="toolsH">Инструменты</div>
+            <div class="p">Творчество руками + магия цифровых вариаций.</div>
+            <div class="toolsGrid" id="toolsGrid"></div>
           </div>
         </div>
-
       </div>
-    </section>
-  </main>
 
-  <div class="modal" id="howStartModal">
-    <div class="modalCard">
-      <div class="modalH">Как начать (онлайн формат)</div>
-      <div class="hSub" style="margin-top:8px;">
-        1) Придумайте персонажа/идею и коротко опишите.<br>
-        2) Откройте свою папку Drive “Ideas” и загрузите референсы (картинки/текст/чертежи).<br>
-        3) На доске в кабинете добавьте URL-ы и комментарии (что важно, что хочется).<br>
-        4) Я делаю генерации и кладу результат в “Done”. Вы добавляете ссылки на готовое — и всё хранится по проекту.
+      <div class="card section" id="map">
+        <div class="mapWrap">
+          <div class="mapHead">
+            <div>
+              <div class="h2" id="mapH">Карта превращений</div>
+              <div class="p" id="mapP"></div>
+            </div>
+            <div style="font-size:12px;color:rgba(255,255,255,.62);">бродилка: лесенки, горки, неожиданные повороты</div>
+          </div>
+          <div class="connector" aria-hidden="true"></div>
+          <div class="mapGrid" id="mapGrid"></div>
+        </div>
       </div>
-      <div class="row" style="margin-top:14px; justify-content:flex-end;">
-        <button class="btn" id="howStartClose">закрыть</button>
+
+      <div class="card section" id="start">
+        <div class="cardPad">
+          <div class="h2" id="startH">Как начать</div>
+          <div class="p" id="startP"></div>
+          <div class="startBullets" id="startBullets"></div>
+          <div class="ctas" style="margin-top:14px;">
+            <a class="btn primary" href="#top" data-scroll>наверх</a>
+            <a class="btn" href="#tools" data-scroll>инструменты</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div id="footerText">© Фабрика детских вселенных</div>
+        <div>one‑page banner • Vasek • яркая палитра</div>
       </div>
     </div>
   </div>
 
-  <div class="modal" id="cardModal">
-    <div class="modalCard">
-      <div class="modalH">Новая карточка (URL)</div>
-      <div class="modalGrid">
-        <div>
-          <div class="label">Название</div>
-          <input class="field" id="mTitle" placeholder="например: Арагорн — меч / стиль / референс">
-          <div class="label" style="margin-top:10px;">URL</div>
-          <input class="field" id="mUrl" placeholder="ссылка на картинку / видео / YouTube / страницу">
-          <div class="label" style="margin-top:10px;">Колонка</div>
-          <select class="field" id="mStatus">
-            <option value="ideas">Идеи</option>
-            <option value="done">Готовое</option>
-          </select>
-        </div>
-        <div>
-          <div class="label">Комментарий</div>
-          <textarea class="field" id="mNote" placeholder="что важно? какие ощущения? детали?"></textarea>
-        </div>
-      </div>
-      <div class="row" style="margin-top:14px; justify-content:flex-end;">
-        <button class="btn ghost" id="mCancel">отмена</button>
-        <button class="btn" id="mCreate">создать</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./script.js"></script>
 </body>
 </html>

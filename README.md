@@ -1,13 +1,16 @@
-# Project 1 — Promo + Cabinet (Board: Ideas → Done)
+# Фабрика детских вселенных — одностраничный лендинг (баннер)
 
-Static site (GitHub Pages). Google Auth + Firestore board (URLs only). No Firebase Storage.
+## Запуск
+Открой `index.html` в браузере (или VS Code Live Server).
 
-## Setup
-1) Enable Google sign-in in Firebase Auth and add your domain to Authorized domains.
-2) Create Firestore.
-3) Paste firebase config into `firebase-config.js`.
-4) Paste `firestore.rules` into Firestore Rules.
-5) Put `Vasek Italic_0.ttf` into `./media/` (exact filename).
+## GitHub Pages
+Залей содержимое архива в корень репозитория → Settings → Pages → Deploy from branch.
 
-## Usage
-Login → Cabinet → paste Drive links → add URL cards → drag Ideas/Done.
+## Шрифт
+В архив уже добавлен `media/Vasek Italic_0.ttf` (Vasek).
+
+## Где менять тексты
+`content.js`
+
+## Где менять стиль
+`style.css` и `mobile.css`
