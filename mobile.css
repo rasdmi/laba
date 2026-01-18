@@ -18,3 +18,14 @@
   .tH2{ font-size: 34px; }
   .tMini{ min-width: 0; width: 100%; }
 }
+
+@media (max-width: 980px){
+  .doodle--rocket{ right:-140px; bottom: 22vh; opacity:.45; }
+  .doodle--clouds{ left:-140px; bottom: 8vh; opacity:.45; }
+  .doodle--stars{ left: 10%; top: 10vh; opacity:.24; }
+  .tBand{ height: 120px; }
+}
+@media (max-width: 520px){
+  .doodle--rocket{ display:none; }
+  .doodle--clouds{ width: 420px; height: 210px; left:-170px; }
+}
