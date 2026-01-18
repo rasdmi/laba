@@ -1,75 +1,84 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Фабрика детских вселенных — межпространственная мастерская</title>
-  <link rel="stylesheet" href="./style.css" />
-  <link rel="stylesheet" href="./mobile.css" />
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Мастерская оживления идей</title>
+<link href="style.css" rel="stylesheet"/>
+<link href="mobile.css" rel="stylesheet"/>
 </head>
 <body>
-  <div class="hero" id="top">
-    <div class="heroBg"></div>
-    <div class="grid"></div>
-    <div class="glow"></div>
-
-    <div class="geom" aria-hidden="true">
-      <div class="g g1"></div>
-      <div class="g g2"></div>
-      <div class="g g3"></div>
-      <div class="tape"></div>
-      <div class="squiggle">
-        <svg viewBox="0 0 240 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 80 C 40 30, 70 110, 100 60 C 130 10, 160 90, 190 40 C 210 15, 225 25, 232 38"
-                stroke="rgba(250,227,111,.85)" stroke-width="6" stroke-linecap="round"/>
-          <path d="M18 92 C 48 42, 78 122, 108 72 C 138 22, 168 102, 198 52 C 214 30, 228 36, 236 48"
-                stroke="rgba(214,161,14,.75)" stroke-width="4" stroke-linecap="round"/>
-        </svg>
-      </div>
-    </div>
-
-    <div class="topbar">
-      <div class="nav">
-        <div class="brand">
-          <b id="brandName">Фабрика детских вселенных</b>
-          <span id="brandSub">межпространственная мастерская</span>
-        </div>
-        <div class="spacer"></div>
-        <div class="navLinks">
-          <a class="pill" href="#start" data-scroll>что это</a>
-          <a class="pill primary" href="#start" data-scroll>как попасть</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="shell">
-      <div class="chips" id="chips"></div>
-
-      <div class="hTitle" id="heroTitle"></div>
-      <div class="hSub" id="heroSub"></div>
-      <div class="lead" id="heroLead"></div>
-
-      <div class="ctas">
-        <a class="btn primary" href="#start" data-scroll id="ctaPrimary">Хочу в мастерскую</a>
-        <a class="btn secondary" href="#how" data-scroll id="ctaSecondary">Как проходит</a>
-      </div>
-
-      <div class="blocks anchor" id="start">
-        <div class="card"><div class="pad" id="blockLeft"></div></div>
-        <div class="card"><div class="pad" id="blockRight"></div></div>
-      </div>
-
-      <div class="card anchor" id="how" style="margin-top:12px;">
-        <div class="pad" id="blockHow"></div>
-      </div>
-
-      <div class="footer" style="margin-top:12px;">
-        <div id="footerLeft"></div>
-        <div><b id="footerRight"></b></div>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="./script.js"></script>
+<header class="topbar">
+<div class="brand">
+<span class="brand__dot"></span>
+<div class="brand__text">
+<div class="brand__title">Мастерская оживления идей</div>
+<div class="brand__sub">От разговора → к визуалу → к цифре → к игре → к живой реализации</div>
+</div>
+</div>
+<nav aria-label="Режимы просмотра" class="lenses">
+<button class="lens is-active" data-lens="kids" type="button">для участников</button>
+<button class="lens" data-lens="parents" type="button">для родителей</button>
+<button class="lens" data-lens="inspire" type="button">для вдохновения</button>
+<button class="lens" data-lens="start" type="button">для начала</button>
+</nav>
+<div class="topbar__right">
+<button class="btn ghost" id="btnHelp" type="button">как пользоваться</button>
+<button class="btn" id="btnReset" type="button">в начало</button>
+</div>
+</header>
+<main aria-label="Карта-алгоритм" class="stage" id="stage">
+<!-- decorative -->
+<div aria-hidden="true" class="doodle doodle--gear"></div>
+<div aria-hidden="true" class="doodle doodle--bulb"></div>
+<div aria-hidden="true" class="doodle doodle--chat"></div>
+<div aria-hidden="true" class="doodle doodle--leaf"></div>
+<section aria-label="Маршрут" class="map" id="map" role="application">
+<svg aria-hidden="true" class="paths" id="paths"></svg>
+<div class="nodes" id="nodes"></div>
+</section>
+</main>
+<aside aria-label="Описание шага" aria-live="polite" class="panel" id="panel">
+<div class="panel__head">
+<div class="panel__title" id="panelTitle">Выберите шаг</div>
+<div class="panel__meta" id="panelMeta">Подсказки меняются по «линзе»</div>
+<button aria-label="Закрыть" class="panel__close" id="panelClose" type="button">✕</button>
+</div>
+<div class="panel__body">
+<p class="panel__desc" id="panelDesc">
+        Кликните на кружок на карте — справа появится короткое описание, а вокруг узла начнут «летать» слова.
+      </p>
+<div class="panel__listWrap">
+<div class="panel__listTitle" id="panelListTitle">Возможности</div>
+<ul class="panel__list" id="panelList"></ul>
+</div>
+<div class="panel__cta">
+<button class="btn" id="panelNext" type="button">следующий шаг →</button>
+<button class="btn ghost" id="panelPin" type="button">закрепить</button>
+</div>
+</div>
+</aside>
+<div aria-hidden="true" aria-modal="true" class="modal" id="modal" role="dialog">
+<div class="modal__card" role="document">
+<div class="modal__title">Как пользоваться</div>
+<ol class="modal__ol">
+<li>Горизонтально скрольте карту (трекпадом/Shift+колёсико).</li>
+<li>Кликните по шагу — справа появится описание и «плавающие» слова.</li>
+<li>Переключайте «линзы» сверху — смысл и подсказки меняются.</li>
+<li>Кнопка «в начало» возвращает к первому шагу.</li>
+</ol>
+<div class="modal__actions">
+<button class="btn" id="modalClose" type="button">понятно</button>
+</div>
+</div>
+</div>
+<script src="content.js"></script>
+<script src="script.js"></script>
+<script src="firebase-config.js" type="module"></script>
+<script src="auth.js" type="module"></script>
+<script src="notebook.js" type="module"></script><script src="locations.js" type="module"></script><script src="admin.js" type="module"></script>
+<script src="character.js" type="module"></script>
+<script src="drawing.js" type="module"></script>
 </body>
 </html>
