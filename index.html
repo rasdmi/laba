@@ -2,100 +2,234 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Фабрика детских вселенных — межпространственная мастерская</title>
-  <link rel="stylesheet" href="./style.css" />
-  <link rel="stylesheet" href="./mobile.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#502503" />
+  <title>Фабрика детских вселенных — Межпространственная мастерская</title>
+  <meta name="description" content="Картон, дріфтвуд, блёстки и нейросети — дети собирают собственные вселенные." />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="hero" id="top">
-    <div class="heroBg"></div>
-    <div class="heroGrid"></div>
-    <div class="heroGlow"></div>
+  <div class="bg" aria-hidden="true"></div>
+  <div class="bgOverlay" aria-hidden="true"></div>
 
-    <div class="topbar">
-      <div class="nav">
-        <div class="brand">
-          <b id="brandName">Фабрика детских вселенных</b>
-          <span id="brandSub">межпространственная мастерская</span>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true">✦</span>
+        <span class="brand__name">Фабрика детских вселенных</span>
+      </div>
+      <nav class="nav">
+        <a href="#about">О мастерской</a>
+        <a href="#map">Карта</a>
+        <a href="#tools">Инструменты</a>
+        <a href="#cta" class="btn btn--small">Записаться</a>
+      </nav>
+      <button class="hamburger" id="hamburger" aria-label="Меню" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="mobileMenu" id="mobileMenu" hidden>
+      <a href="#about">О мастерской</a>
+      <a href="#map">Карта</a>
+      <a href="#tools">Инструменты</a>
+      <a href="#cta" class="btn btn--small">Записаться</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="top">
+      <div class="hero__inner">
+        <h1 class="hero__title">Межпространственная мастерская</h1>
+        <p class="hero__subtitle">
+          Место, где дети делают из картона мечи, короны и дома,
+          из морских коряжек — волшебные палочки, сыпят блёстками и творят задумки.
+          А затем оживляют всё это в цифровом мире — так, будто вселенная стала бесконечной.
+        </p>
+
+        <div class="hero__badges">
+          <span class="pill">картон + дріфтвуд</span>
+          <span class="pill">нейросети + игра</span>
+          <span class="pill">безопасно и бережно</span>
         </div>
-        <div class="spacer"></div>
-        <div class="navLinks">
-          <a href="#map" data-scroll>карта</a>
-          <a href="#tools" data-scroll>инструменты</a>
-          <a class="primary" href="#start" data-scroll>как попасть</a>
+
+        <div class="hero__actions">
+          <a class="btn" href="#cta">Хочу в мастерскую</a>
+          <a class="btn btn--ghost" href="#map">Посмотреть «карту»</a>
+        </div>
+
+        <div class="scrollHint" aria-hidden="true">
+          <span class="scrollHint__dot"></span>
+          <span class="scrollHint__text">скролль</span>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="doodles" aria-hidden="true">
-      <div class="doodle d1"></div>
-      <div class="doodle d2"></div>
-      <div class="doodle d3"></div>
-    </div>
+    <section class="section" id="about">
+      <div class="container">
+        <div class="sectionHeader">
+          <h2>Что здесь происходит</h2>
+          <p>Один большой «баннер-приглашение» в реальную мастерскую и в выдуманные миры.</p>
+        </div>
 
-    <div class="shell">
-      <div class="kicker" id="badges"></div>
+        <div class="grid grid--3">
+          <article class="card">
+            <h3>Материальный мир</h3>
+            <p>Картонные постройки, маски, короны, мечи. Сборка и декор: ткань, краски, блёстки, наклейки.</p>
+            <ul class="list">
+              <li>макеты домов и башен</li>
+              <li>щит/меч/корона</li>
+              <li>волшебные палочки из дріфта</li>
+            </ul>
+          </article>
 
-      <div class="hTitle" id="heroTitle"></div>
-      <div class="hSub" id="heroSub"></div>
-      <div class="hLead" id="heroLead"></div>
+          <article class="card">
+            <h3>Цифровая магия</h3>
+            <p>Оцифровываем идеи и превращаем их в картинки, страницы и мини‑игры — без занудства.</p>
+            <ul class="list">
+              <li>NanoBanana — «бесконечные варианты»</li>
+              <li>Vibe‑coding — свой сайт/игра</li>
+              <li>Kling AI — оживление в видео</li>
+            </ul>
+          </article>
 
-      <div class="ctas">
-        <a class="btn primary" href="#start" data-scroll id="cta1">Записаться</a>
-        <a class="btn" href="#map" data-scroll id="cta2">Как это работает</a>
+          <article class="card">
+            <h3>Процесс</h3>
+            <p>У детей есть свобода, но и рамка: небольшие задания, подсказки, мини‑цели и «выход в результат».</p>
+            <ul class="list">
+              <li>идея → макет → артефакт</li>
+              <li>артефакт → скан/фото → мир</li>
+              <li>мир → видео/страница/игра</li>
+            </ul>
+          </article>
+        </div>
       </div>
+    </section>
 
-      <div class="heroCardRow section">
-        <div class="card">
-          <div class="cardPad">
-            <div class="h2" id="whatH">Что здесь происходит</div>
-            <div class="p" id="whatP"></div>
+    <section class="section section--map" id="map">
+      <div class="container">
+        <div class="sectionHeader">
+          <h2>Карта мастерской</h2>
+          <p>Как в детской карте‑плакате: островки смыслов, на которые можно «приземляться».</p>
+        </div>
+
+        <div class="map">
+          <div class="map__blob map__blob--1"></div>
+          <div class="map__blob map__blob--2"></div>
+          <div class="map__blob map__blob--3"></div>
+          <div class="map__blob map__blob--4"></div>
+
+          <button class="hotspot" style="--x:12%;--y:20%">
+            <span class="hotspot__title">Вход</span>
+            <span class="hotspot__text">Выбираем тему, собираем референсы, придумываем «правила мира».</span>
+          </button>
+          <button class="hotspot" style="--x:62%;--y:18%">
+            <span class="hotspot__title">Картонный цех</span>
+            <span class="hotspot__text">Режем, клеим, строим дома, корабли, замки, квест‑объекты.</span>
+          </button>
+          <button class="hotspot" style="--x:22%;--y:62%">
+            <span class="hotspot__title">Дріфт‑лаборатория</span>
+            <span class="hotspot__text">Палочки, амулеты, тотемы, артефакты из коряжек и ниток.</span>
+          </button>
+          <button class="hotspot" style="--x:70%;--y:62%">
+            <span class="hotspot__title">Нейро‑портал</span>
+            <span class="hotspot__text">NanoBanana, vibe‑coding, Kling AI: переносим в экран и оживляем.</span>
+          </button>
+
+          <div class="map__legend">
+            <div class="legendRow"><span class="dot dot--a"></span> мастерская</div>
+            <div class="legendRow"><span class="dot dot--b"></span> нейро‑инструменты</div>
+            <div class="legendRow"><span class="dot dot--c"></span> игра/сюжет</div>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="card" id="tools">
-          <div class="cardPad">
-            <div class="h2" id="toolsH">Инструменты</div>
-            <div class="p">Творчество руками + магия цифровых вариаций.</div>
-            <div class="toolsGrid" id="toolsGrid"></div>
+    <section class="section" id="tools">
+      <div class="container">
+        <div class="sectionHeader">
+          <h2>Инструменты</h2>
+          <p>Три «портала» — простыми словами, как на плакате‑подсказке.</p>
+        </div>
+
+        <div class="qa">
+          <div class="qa__card qa__card--wide">
+            <h3>Где мы?</h3>
+            <p>В мастерской, но одной ногой — в выдуманной вселенной. Здесь нормально быть странным, смешным и смелым.</p>
+          </div>
+          <div class="qa__card">
+            <h3>NanoBanana</h3>
+            <p>Оцифровка задумок: из рисунка — множество красивых вариантов, персонажи, предметы, сцены.</p>
+          </div>
+          <div class="qa__card">
+            <h3>Vibe‑coding</h3>
+            <p>Собираем страницу своего мира или мини‑игру: кнопки, уровни, карточки персонажей.</p>
+          </div>
+          <div class="qa__card">
+            <h3>Kling AI</h3>
+            <p>Оживляем: короткие петли, эмоции персонажей, движение, «сцена ожила».</p>
+          </div>
+          <div class="qa__card qa__card--wide">
+            <h3>Чем уникален твой мир?</h3>
+            <p>Правила, жители, артефакты, конфликт, юмор — и финальный «постер/видео/страница», который можно показать друзьям.</p>
           </div>
         </div>
       </div>
+    </section>
 
-      <div class="card section" id="map">
-        <div class="mapWrap">
-          <div class="mapHead">
-            <div>
-              <div class="h2" id="mapH">Карта превращений</div>
-              <div class="p" id="mapP"></div>
+    <section class="section" id="cta">
+      <div class="container">
+        <div class="cta">
+          <div class="cta__text">
+            <h2>Приходите делать вселенные</h2>
+            <p>
+              Это приглашение‑баннер. Дальше вы подставите адрес, даты и форму записи.
+              Если нужно — сделаю второй вариант: «строже/чище» или «ещё детскее и ярче».
+            </p>
+
+            <div class="cta__rows">
+              <div class="ctaRow">
+                <span class="ctaRow__label">Возраст</span>
+                <span class="ctaRow__value">6–12 (можно адаптировать)</span>
+              </div>
+              <div class="ctaRow">
+                <span class="ctaRow__label">Длительность</span>
+                <span class="ctaRow__value">90–120 минут</span>
+              </div>
+              <div class="ctaRow">
+                <span class="ctaRow__label">Формат</span>
+                <span class="ctaRow__value">офлайн + цифровой результат</span>
+              </div>
             </div>
-            <div style="font-size:12px;color:rgba(255,255,255,.62);">бродилка: лесенки, горки, неожиданные повороты</div>
+
+            <div class="cta__actions">
+              <a class="btn" href="#" onclick="return false;">Записаться (ссылка)</a>
+              <a class="btn btn--ghost" href="#" onclick="return false;">Написать в Telegram (ссылка)</a>
+            </div>
           </div>
-          <div class="connector" aria-hidden="true"></div>
-          <div class="mapGrid" id="mapGrid"></div>
-        </div>
-      </div>
 
-      <div class="card section" id="start">
-        <div class="cardPad">
-          <div class="h2" id="startH">Как начать</div>
-          <div class="p" id="startP"></div>
-          <div class="startBullets" id="startBullets"></div>
-          <div class="ctas" style="margin-top:14px;">
-            <a class="btn primary" href="#top" data-scroll>наверх</a>
-            <a class="btn" href="#tools" data-scroll>инструменты</a>
+          <div class="cta__card">
+            <div class="stamp">
+              <div class="stamp__title">Внутри</div>
+              <div class="stamp__line">картонный цех</div>
+              <div class="stamp__line">дрифт‑лаборатория</div>
+              <div class="stamp__line">нейро‑портал</div>
+            </div>
+            <div class="cta__note">
+              <p><strong>Подсказка:</strong> фон можно заменить на любой другой — главное сохранить затемнение и контраст текста.</p>
+              <p><strong>Шрифт:</strong> Vasek Italic (подключён локально).</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="footer">
-        <div id="footerText">© Фабрика детских вселенных</div>
-        <div>one‑page banner • Vasek • яркая палитра</div>
+        <footer class="footer">
+          <span>© Фабрика детских вселенных</span>
+          <span class="footer__sep">•</span>
+          <a href="#top">наверх</a>
+        </footer>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
-  <script type="module" src="./script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

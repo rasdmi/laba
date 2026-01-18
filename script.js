@@ -1,81 +1,54 @@
-import { CONTENT } from "./content.js";
-const $ = (s, r=document)=>r.querySelector(s);
+/* Tiny, no-deps interactions */
 
-function render(){
-  $("#brandName").textContent = CONTENT.title;
-  $("#brandSub").textContent = CONTENT.subtitle;
+(function () {
+  const root = document.documentElement;
 
-  const badges = $("#badges");
-  badges.innerHTML = "";
-  CONTENT.badges.forEach(b=>{
-    const el = document.createElement("div");
-    el.className = "badge";
-    el.textContent = b;
-    badges.appendChild(el);
-  });
-
-  $("#heroTitle").textContent = CONTENT.title;
-  $("#heroSub").textContent = CONTENT.subtitle;
-  $("#heroLead").textContent = CONTENT.heroLead;
-  $("#cta1").textContent = CONTENT.cta1;
-  $("#cta2").textContent = CONTENT.cta2;
-
-  $("#whatH").textContent = CONTENT.sections.what.h;
-  $("#whatP").textContent = CONTENT.sections.what.p;
-
-  $("#toolsH").textContent = CONTENT.sections.tools.h;
-  const tools = $("#toolsGrid");
-  tools.innerHTML = "";
-  CONTENT.sections.tools.items.forEach(it=>{
-    const div = document.createElement("div");
-    div.className = "tool";
-    div.innerHTML = `<b>${it.t}</b><span>${it.p}</span>`;
-    tools.appendChild(div);
-  });
-
-  $("#mapH").textContent = CONTENT.sections.map.h;
-  $("#mapP").textContent = CONTENT.sections.map.p;
-  const map = $("#mapGrid");
-  map.innerHTML = "";
-  CONTENT.sections.map.steps.forEach((s, idx)=>{
-    const div = document.createElement("div");
-    div.className = "step";
-    div.style.transform = `rotate(${(idx%2?1:-1) * (0.35 + idx*0.06)}deg)`;
-    div.innerHTML = `<div class="n">${s.n}</div><div class="t">${s.t}</div><div class="d">${s.p}</div>`;
-    map.appendChild(div);
-  });
-
-  $("#startH").textContent = CONTENT.sections.start.h;
-  $("#startP").textContent = CONTENT.sections.start.p;
-  const bl = $("#startBullets");
-  bl.innerHTML = "";
-  CONTENT.sections.start.bullets.forEach(x=>{
-    const d = document.createElement("div");
-    d.className = "bul";
-    d.textContent = x;
-    bl.appendChild(d);
-  });
-
-  $("#footerText").textContent = CONTENT.footer;
-}
-
-function anchors(){
-  document.addEventListener("click",(e)=>{
-    const a = e.target.closest("a[data-scroll]");
+  // Smooth scroll for internal anchors
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a[href^="#"]');
     if (!a) return;
-    e.preventDefault();
     const id = a.getAttribute("href");
+    if (!id || id === "#") return;
     const el = document.querySelector(id);
     if (!el) return;
-    el.scrollIntoView({behavior:"smooth", block:"start"});
-  });
-}
-
-function ctas(){
-  $("#cta1").addEventListener("click",(e)=>{
     e.preventDefault();
-    alert("Демо CTA.\nДальше подключим Telegram/форму записи и даты.");
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    history.pushState(null, "", id);
   });
-}
 
-render(); anchors(); ctas();
+  // Update active nav link on scroll
+  const nav = document.querySelector(".nav");
+  const navLinks = Array.from(document.querySelectorAll(".nav a[href^='#']"));
+  const sections = navLinks
+    .map((l) => document.querySelector(l.getAttribute("href")))
+    .filter(Boolean);
+
+  const setActive = () => {
+    const y = window.scrollY + 120;
+    let active = null;
+    for (const s of sections) {
+      if (s.offsetTop <= y) active = s;
+    }
+    navLinks.forEach((l) => l.classList.remove("is-active"));
+    if (active) {
+      const l = navLinks.find((x) => x.getAttribute("href") === `#${active.id}`);
+      if (l) l.classList.add("is-active");
+    }
+
+    // shrink nav on scroll
+    if (nav) {
+      nav.classList.toggle("is-scrolled", window.scrollY > 14);
+    }
+  };
+
+  window.addEventListener("scroll", setActive, { passive: true });
+  setActive();
+
+  // Respect reduced motion
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const updateMotionFlag = () => {
+    root.dataset.reduceMotion = reduceMotion.matches ? "1" : "0";
+  };
+  reduceMotion.addEventListener?.("change", updateMotionFlag);
+  updateMotionFlag();
+})();
