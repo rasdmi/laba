@@ -1,0 +1,17 @@
+@media (max-width: 980px){
+  .blocks{ grid-template-columns: 1fr; }
+  .steps{ grid-template-columns: 1fr 1fr; }
+  .g2{ display:none; }
+  .tape{ left: 52%; top: 34vh; width: 180px; }
+  .hTitle{ font-size: 62px; }
+}
+
+@media (max-width: 520px){
+  .brand span{ display:none; }
+  .pill{ padding: 9px 10px; }
+  .hTitle{ font-size: 54px; }
+  .btn{ width: 100%; text-align:center; }
+  .steps{ grid-template-columns: 1fr; }
+  .tape{ display:none; }
+  .squiggle{ left: 6%; top: 44vh; opacity:.45; }
+}
